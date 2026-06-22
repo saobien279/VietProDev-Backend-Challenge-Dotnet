@@ -1,0 +1,32 @@
+## Ignore Visual Studio & VS Code files
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Ignore build output (bin, obj, etc.)
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Tt]emp/
+
+## Rider/JetBrains files
+.idea/
+*.sln.iml
+
+## Publish output
+publish/
+
+## OS metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+## User Secrets
+secrets.json
+
+## Logs
+*.log
