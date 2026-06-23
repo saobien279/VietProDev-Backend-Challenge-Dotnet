@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace MiniERP.Domain.Entities
 {
-    public class Category
+    public class Category : BaseEntity<int>
     {
-        public int Id { get; set; }
         public string CategoryName { get; set; } = null!;
         
         // Self-referencing (Danh mục Cha - Con)

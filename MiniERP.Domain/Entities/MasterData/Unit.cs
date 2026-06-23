@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace MiniERP.Domain.Entities
 {
-    public class Unit
+    public class Unit : BaseEntity<int>
     {
-        public int Id { get; set; }
         public string UnitName { get; set; } = null!; // Cái, Thùng, Hộp...
 
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();

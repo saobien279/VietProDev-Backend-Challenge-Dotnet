@@ -10,5 +10,9 @@ namespace MiniERP.Domain.Entities
 
         public int RoleId { get; set; }
         public virtual Role Role { get; set; } = null!;
+
+        // Audit Fields
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public Guid? CreatedBy { get; set; }
     }
 }

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace MiniERP.Domain.Entities
 {
-    public class SalesOrderItem
+    public class SalesOrderItem : BaseEntity<Guid>
     {
-        public Guid Id { get; set; }
         public Guid SalesOrderId { get; set; }
         public virtual SalesOrder SalesOrder { get; set; } = null!;
         public Guid ProductId { get; set; }
