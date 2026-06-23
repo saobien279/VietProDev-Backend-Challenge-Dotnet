@@ -196,8 +196,8 @@ namespace MiniERP.Infrastructure.Data
                         property.SetDefaultValueSql("gen_random_uuid()");
                     }
 
-                    // Standardize CreatedAt & PaymentDate default value on add
-                    if ((property.Name == "CreatedAt" || property.Name == "PaymentDate") && property.ClrType == typeof(DateTime))
+                    // Standardize CreatedAt, PaymentDate & LastUpdated default value on add
+                    if ((property.Name == "CreatedAt" || property.Name == "PaymentDate" || property.Name == "LastUpdated") && property.ClrType == typeof(DateTime))
                     {
                         property.SetDefaultValueSql("CURRENT_TIMESTAMP");
                     }

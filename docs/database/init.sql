@@ -144,6 +144,7 @@ CREATE TABLE inventories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL UNIQUE,
     quantity INT NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
     CONSTRAINT ck_inventory_quantity CHECK (quantity >= 0),
     
