@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -17,6 +17,9 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-
+  <ItemGroup>
+    <ProjectReference Include="..\MiniERP.Infrastructure\MiniERP.Infrastructure.csproj" />
+    <ProjectReference Include="..\MiniERP.Domain\MiniERP.Domain.csproj" />
+  </ItemGroup>
 
 </Project>
