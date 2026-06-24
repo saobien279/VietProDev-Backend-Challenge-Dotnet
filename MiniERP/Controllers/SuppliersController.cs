@@ -92,17 +92,6 @@ namespace MiniERP.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSupplierRequest request, CancellationToken cancellationToken)
         {
-            if (id != request.Id)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "ID mismatch.",
-                    data = (object?)null,
-                    errors = new[] { "The ID in the URL route must match the ID in the request body." }
-                });
-            }
-
             var validationResult = await _updateValidator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
             {
@@ -115,49 +104,75 @@ namespace MiniERP.Controllers
                 });
             }
 
-            var updated = await _supplierService.UpdateAsync(id, request, cancellationToken);
-            if (!updated)
+            try
             {
-                return NotFound(new
+                var updated = await _supplierService.UpdateAsync(id, request, cancellationToken);
+                if (!updated)
                 {
-                    success = false,
-                    message = $"Supplier with ID {id} not found.",
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Supplier with ID {id} not found.",
+                        data = (object?)null,
+                        errors = new[] { $"Supplier with ID {id} does not exist or has been deleted." }
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Supplier updated successfully.",
                     data = (object?)null,
-                    errors = new[] { $"Supplier with ID {id} does not exist or has been deleted." }
+                    errors = (object?)null
                 });
             }
-
-            return Ok(new
+            catch (ArgumentException ex)
             {
-                success = true,
-                message = "Supplier updated successfully.",
-                data = (object?)null,
-                errors = (object?)null
-            });
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Business validation failed.",
+                    data = (object?)null,
+                    errors = new[] { ex.Message }
+                });
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
-            var deleted = await _supplierService.DeleteAsync(id, cancellationToken);
-            if (!deleted)
+            try
             {
-                return NotFound(new
+                var deleted = await _supplierService.DeleteAsync(id, cancellationToken);
+                if (!deleted)
                 {
-                    success = false,
-                    message = $"Supplier with ID {id} not found.",
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Supplier with ID {id} not found.",
+                        data = (object?)null,
+                        errors = new[] { $"Supplier with ID {id} does not exist or has been deleted." }
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Supplier deleted successfully (soft delete).",
                     data = (object?)null,
-                    errors = new[] { $"Supplier with ID {id} does not exist or has been deleted." }
+                    errors = (object?)null
                 });
             }
-
-            return Ok(new
+            catch (InvalidOperationException ex)
             {
-                success = true,
-                message = "Supplier deleted successfully (soft delete).",
-                data = (object?)null,
-                errors = (object?)null
-            });
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Business validation failed.",
+                    data = (object?)null,
+                    errors = new[] { ex.Message }
+                });
+            }
         }
     }
 }
