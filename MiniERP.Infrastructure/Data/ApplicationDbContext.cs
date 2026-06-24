@@ -70,6 +70,32 @@ namespace MiniERP.Infrastructure.Data
                             break;
                     }
                 }
+                else if (entry.Entity is BaseEntity<int> intAuditEntity)
+                {
+                    switch (entry.State)
+                    {
+                        case EntityState.Added:
+                            intAuditEntity.CreatedAt = DateTime.UtcNow;
+                            intAuditEntity.CreatedBy = currentUserId;
+                            break;
+
+                        case EntityState.Modified:
+                            entry.Property("CreatedAt").IsModified = false;
+                            entry.Property("CreatedBy").IsModified = false;
+                            entry.Property("DeletedAt").IsModified = false;
+                            entry.Property("DeletedBy").IsModified = false;
+
+                            intAuditEntity.UpdatedAt = DateTime.UtcNow;
+                            intAuditEntity.UpdatedBy = currentUserId;
+                            break;
+
+                        case EntityState.Deleted:
+                            entry.State = EntityState.Modified;
+                            intAuditEntity.DeletedAt = DateTime.UtcNow;
+                            intAuditEntity.DeletedBy = currentUserId;
+                            break;
+                    }
+                }
             }
 
             return await base.SaveChangesAsync(cancellationToken);
