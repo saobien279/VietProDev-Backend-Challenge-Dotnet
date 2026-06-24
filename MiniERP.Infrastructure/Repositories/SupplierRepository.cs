@@ -46,7 +46,12 @@ namespace MiniERP.Infrastructure.Repositories
 
         public void Delete(Supplier supplier)
         {
-            _context.Suppliers.Update(supplier); // Soft Delete
+            _context.Suppliers.Remove(supplier); // Sử dụng Remove, DbContext sẽ tự động chuyển đổi sang Soft Delete ở SaveChanges
+        }
+
+        public async Task<bool> HasPurchaseOrdersAsync(Guid supplierId, CancellationToken cancellationToken = default)
+        {
+            return await _context.PurchaseOrders.AnyAsync(o => o.SupplierId == supplierId, cancellationToken);
         }
 
         public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

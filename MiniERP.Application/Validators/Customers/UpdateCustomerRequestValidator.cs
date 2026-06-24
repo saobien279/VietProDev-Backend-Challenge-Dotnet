@@ -14,9 +14,6 @@ namespace MiniERP.Application.Validators.Customers
         {
             _customerRepository = customerRepository;
 
-            RuleFor(x => x.Id)
-                .NotEmpty().WithMessage("Id is required for updates.");
-
             RuleFor(x => x.CustomerName)
                 .NotEmpty().WithMessage("Customer name is required.")
                 .MaximumLength(100).WithMessage("Customer name must not exceed 100 characters.");
@@ -27,13 +24,7 @@ namespace MiniERP.Application.Validators.Customers
 
             RuleFor(x => x.Phone)
                 .NotEmpty().WithMessage("Phone number is required.")
-                .MaximumLength(20).WithMessage("Phone number must not exceed 20 characters.")
-                .MustAsync(BeUniquePhoneForUpdate).WithMessage("Phone number already belongs to another customer.");
-        }
-
-        private async Task<bool> BeUniquePhoneForUpdate(UpdateCustomerRequest model, string phone, CancellationToken cancellationToken)
-        {
-            return !await _customerRepository.AnyAsync(c => c.Phone == phone && c.Id != model.Id, cancellationToken);
+                .MaximumLength(20).WithMessage("Phone number must not exceed 20 characters.");
         }
     }
 }

@@ -42,7 +42,12 @@ namespace MiniERP.Infrastructure.Repositories
 
         public void Delete(Customer customer)
         {
-            _context.Customers.Update(customer); // Vì dùng Soft Delete (Xóa mềm) nên thực chất vẫn là Update trường DeletedAt
+            _context.Customers.Remove(customer); // Sử dụng Remove, DbContext sẽ tự động chuyển đổi sang Soft Delete ở SaveChanges
+        }
+
+        public async Task<bool> HasSalesOrdersAsync(Guid customerId, CancellationToken cancellationToken = default)
+        {
+            return await _context.SalesOrders.AnyAsync(o => o.CustomerId == customerId, cancellationToken);
         }
 
         public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

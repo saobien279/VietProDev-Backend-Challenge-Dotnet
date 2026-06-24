@@ -78,11 +78,16 @@ namespace MiniERP.Application.Services
             var supplier = await _supplierRepository.GetByIdAsync(id, cancellationToken);
             if (supplier == null) return false;
 
+            var phoneExists = await _supplierRepository.AnyAsync(s => s.Phone == request.Phone && s.Id != id, cancellationToken);
+            if (phoneExists)
+            {
+                throw new ArgumentException("Phone number already belongs to another supplier.");
+            }
+
             supplier.SupplierName = request.SupplierName;
             supplier.Email = request.Email;
             supplier.Phone = request.Phone;
             supplier.Address = request.Address;
-            supplier.UpdatedAt = DateTime.UtcNow;
 
             _supplierRepository.Update(supplier);
             await _supplierRepository.SaveChangesAsync(cancellationToken);
@@ -94,7 +99,11 @@ namespace MiniERP.Application.Services
             var supplier = await _supplierRepository.GetByIdAsync(id, cancellationToken);
             if (supplier == null) return false;
 
-            supplier.DeletedAt = DateTime.UtcNow;
+            var hasOrders = await _supplierRepository.HasPurchaseOrdersAsync(id, cancellationToken);
+            if (hasOrders)
+            {
+                throw new InvalidOperationException("Cannot delete supplier because they have associated purchase orders.");
+            }
 
             _supplierRepository.Delete(supplier);
             await _supplierRepository.SaveChangesAsync(cancellationToken);

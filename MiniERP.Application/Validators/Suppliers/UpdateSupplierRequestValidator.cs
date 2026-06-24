@@ -14,8 +14,6 @@ namespace MiniERP.Application.Validators.Suppliers
         {
             _supplierRepository = supplierRepository;
 
-            RuleFor(x => x.Id)
-                .NotEmpty().WithMessage("Id is required for updates.");
 
             RuleFor(x => x.SupplierName)
                 .NotEmpty().WithMessage("Supplier name is required.")
@@ -27,13 +25,7 @@ namespace MiniERP.Application.Validators.Suppliers
 
             RuleFor(x => x.Phone)
                 .NotEmpty().WithMessage("Phone number is required.")
-                .MaximumLength(20).WithMessage("Phone number must not exceed 20 characters.")
-                .MustAsync(BeUniquePhoneForUpdate).WithMessage("Phone number already belongs to another supplier.");
-        }
-
-        private async Task<bool> BeUniquePhoneForUpdate(UpdateSupplierRequest model, string phone, CancellationToken cancellationToken)
-        {
-            return !await _supplierRepository.AnyAsync(s => s.Phone == phone && s.Id != model.Id, cancellationToken);
+                .MaximumLength(20).WithMessage("Phone number must not exceed 20 characters.");
         }
     }
 }

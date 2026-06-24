@@ -10,6 +10,7 @@ namespace MiniERP.Application.Interfaces.Repositories
         void Add(Customer customer);
         void Update(Customer customer);
         void Delete(Customer customer);
+        Task<bool> HasSalesOrdersAsync(Guid customerId, CancellationToken cancellationToken = default);
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

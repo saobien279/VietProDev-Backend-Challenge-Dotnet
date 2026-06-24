@@ -10,6 +10,7 @@ namespace MiniERP.Application.Interfaces.Repositories
         void Add(Supplier supplier);
         void Update(Supplier supplier);
         void Delete(Supplier supplier);
+        Task<bool> HasPurchaseOrdersAsync(Guid supplierId, CancellationToken cancellationToken = default);
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

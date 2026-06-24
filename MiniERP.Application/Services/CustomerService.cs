@@ -78,11 +78,16 @@ namespace MiniERP.Application.Services
             var customer = await _customerRepository.GetByIdAsync(id, cancellationToken);
             if (customer == null) return false;
 
+            var phoneExists = await _customerRepository.AnyAsync(c => c.Phone == request.Phone && c.Id != id, cancellationToken);
+            if (phoneExists)
+            {
+                throw new ArgumentException("Phone number already belongs to another customer.");
+            }
+
             customer.CustomerName = request.CustomerName;
             customer.Email = request.Email;
             customer.Phone = request.Phone;
             customer.Address = request.Address;
-            customer.UpdatedAt = DateTime.UtcNow;
 
             _customerRepository.Update(customer);
             await _customerRepository.SaveChangesAsync(cancellationToken);
@@ -94,7 +99,11 @@ namespace MiniERP.Application.Services
             var customer = await _customerRepository.GetByIdAsync(id, cancellationToken);
             if (customer == null) return false;
 
-            customer.DeletedAt = DateTime.UtcNow;
+            var hasOrders = await _customerRepository.HasSalesOrdersAsync(id, cancellationToken);
+            if (hasOrders)
+            {
+                throw new InvalidOperationException("Cannot delete customer because they have associated sales orders.");
+            }
 
             _customerRepository.Delete(customer);
             await _customerRepository.SaveChangesAsync(cancellationToken);
