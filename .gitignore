@@ -1,5 +1,6 @@
 ## Ignore Visual Studio & VS Code files
 .vs/
+gemini.md
 .vscode/
 *.suo
 *.user

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiniERP.Domain\MiniERP.Domain.csproj" />
+    <ProjectReference Include="..\MiniERP.Application\MiniERP.Application.csproj" />
   </ItemGroup>
 
 </Project>

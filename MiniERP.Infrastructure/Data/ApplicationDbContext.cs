@@ -2,15 +2,25 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using MiniERP.Domain.Entities;
+using MiniERP.Application.Interfaces.Services;
 
 namespace MiniERP.Infrastructure.Data
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        private readonly ICurrentUserService _currentUserService;
+
+        public ApplicationDbContext(
+            DbContextOptions<ApplicationDbContext> options,
+            ICurrentUserService currentUserService) : base(options)
+        {
+            _currentUserService = currentUserService;
+        }
 
         public DbSet<User> Users => Set<User>();
         public DbSet<Role> Roles => Set<Role>();
@@ -27,6 +37,67 @@ namespace MiniERP.Infrastructure.Data
         public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
         public DbSet<SalesOrderItem> SalesOrderItems => Set<SalesOrderItem>();
         public DbSet<Payment> Payments => Set<Payment>();
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var currentUserId = _currentUserService.UserId;
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.Entity is BaseEntity<Guid> auditEntity)
+                {
+                    switch (entry.State)
+                    {
+                        case EntityState.Added:
+                            auditEntity.CreatedAt = DateTime.UtcNow;
+                            auditEntity.CreatedBy = currentUserId;
+                            break;
+
+                        case EntityState.Modified:
+                            entry.Property("CreatedAt").IsModified = false;
+                            entry.Property("CreatedBy").IsModified = false;
+                            entry.Property("DeletedAt").IsModified = false;
+                            entry.Property("DeletedBy").IsModified = false;
+
+                            auditEntity.UpdatedAt = DateTime.UtcNow;
+                            auditEntity.UpdatedBy = currentUserId;
+                            break;
+
+                        case EntityState.Deleted:
+                            entry.State = EntityState.Modified;
+                            auditEntity.DeletedAt = DateTime.UtcNow;
+                            auditEntity.DeletedBy = currentUserId;
+                            break;
+                    }
+                }
+                
+                else if (entry.Entity is BaseEntity<int> intAuditEntity)
+                {
+                    switch (entry.State)
+                    {
+                        case EntityState.Added:
+                            intAuditEntity.CreatedAt = DateTime.UtcNow;
+                            intAuditEntity.CreatedBy = currentUserId;
+                            break;
+                        case EntityState.Modified:
+                            entry.Property("CreatedAt").IsModified = false;
+                            entry.Property("CreatedBy").IsModified = false;
+                            entry.Property("DeletedAt").IsModified = false;
+                            entry.Property("DeletedBy").IsModified = false;
+                            intAuditEntity.UpdatedAt = DateTime.UtcNow;
+                            intAuditEntity.UpdatedBy = currentUserId;
+                            break;
+                        case EntityState.Deleted:
+                            entry.State = EntityState.Modified;
+                            intAuditEntity.DeletedAt = DateTime.UtcNow;
+                            intAuditEntity.DeletedBy = currentUserId;
+                            break;
+                    }
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
