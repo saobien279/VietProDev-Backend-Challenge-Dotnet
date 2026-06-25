@@ -188,6 +188,10 @@ namespace MiniERP.Infrastructure.Data
             // =========================================================================
             modelBuilder.Entity<Inventory>(entity =>
             {
+                entity.Property<uint>("xmin")
+                    .HasColumnName("xmin")
+                    .IsRowVersion();
+
                 entity.HasOne(i => i.Product)
                     .WithOne(p => p.Inventory)
                     .HasForeignKey<Inventory>(i => i.ProductId)
