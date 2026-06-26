@@ -1,4 +1,5 @@
 using MiniERP.Application.DTOs.Customers;
+using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
@@ -81,7 +82,7 @@ namespace MiniERP.Application.Services
             var phoneExists = await _customerRepository.AnyAsync(c => c.Phone == request.Phone && c.Id != id, cancellationToken);
             if (phoneExists)
             {
-                throw new ArgumentException("Phone number already belongs to another customer.");
+                throw new BusinessValidationException("Phone number already belongs to another customer.");
             }
 
             customer.CustomerName = request.CustomerName;
@@ -102,7 +103,7 @@ namespace MiniERP.Application.Services
             var hasOrders = await _customerRepository.HasSalesOrdersAsync(id, cancellationToken);
             if (hasOrders)
             {
-                throw new InvalidOperationException("Cannot delete customer because they have associated sales orders.");
+                throw new BusinessValidationException("Cannot delete customer because they have associated sales orders.");
             }
 
             _customerRepository.Delete(customer);

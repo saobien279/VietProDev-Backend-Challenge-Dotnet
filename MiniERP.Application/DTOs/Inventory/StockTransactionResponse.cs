@@ -12,6 +12,9 @@ namespace MiniERP.Application.DTOs.Inventory
         public int Quantity { get; set; }
         public string Reason { get; set; } = null!;
         public Guid? ReferenceId { get; set; }
+        public int StockBefore { get; set; }
+        public int StockAfter { get; set; }
+        public string? ReferenceType { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

@@ -1,12 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using MiniERP.Infrastructure.Data;
-using MiniERP.Application.Interfaces.Repositories;
-using MiniERP.Infrastructure.Repositories;
-using MiniERP.Application.Interfaces.Services;
-using MiniERP.Application.Services;
 using FluentValidation;
 using MiniERP.Filters;
-using MiniERP.Infrastructure.Services;
+using MiniERP.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,38 +10,23 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<NormalizeFilter>();
+    options.Filters.Add<ValidationFilter>();
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Đăng ký ApplicationDbContext kết nối PostgreSQL
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Đăng ký Repositories
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IUnitRepository, UnitRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
-builder.Services.AddScoped<IStockTransactionRepository, StockTransactionRepository>();
-
-// Đăng ký Services
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<ISupplierService, SupplierService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IUnitService, UnitService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IInventoryService, InventoryService>();
+// Đăng ký CSDL, Repositories và Services qua Extension Methods
+builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddRepositories();
+builder.Services.AddApplicationServices();
 
 // Đăng ký Validators từ Application Assembly
 builder.Services.AddValidatorsFromAssembly(typeof(MiniERP.Application.Validators.Customers.CreateCustomerRequestValidator).Assembly);
 
-
-
 var app = builder.Build();
+
+// Sử dụng exception middleware qua Extension Method
+app.UseGlobalExceptionHandling();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -58,7 +37,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 
 app.MapControllers();
 
