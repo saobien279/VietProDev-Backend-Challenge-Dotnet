@@ -1,4 +1,5 @@
 using MiniERP.Application.DTOs.Suppliers;
+using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
@@ -81,7 +82,7 @@ namespace MiniERP.Application.Services
             var phoneExists = await _supplierRepository.AnyAsync(s => s.Phone == request.Phone && s.Id != id, cancellationToken);
             if (phoneExists)
             {
-                throw new ArgumentException("Phone number already belongs to another supplier.");
+                throw new BusinessValidationException("Phone number already belongs to another supplier.");
             }
 
             supplier.SupplierName = request.SupplierName;
@@ -102,7 +103,7 @@ namespace MiniERP.Application.Services
             var hasOrders = await _supplierRepository.HasPurchaseOrdersAsync(id, cancellationToken);
             if (hasOrders)
             {
-                throw new InvalidOperationException("Cannot delete supplier because they have associated purchase orders.");
+                throw new BusinessValidationException("Cannot delete supplier because they have associated purchase orders.");
             }
 
             _supplierRepository.Delete(supplier);

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using MiniERP.Domain.Entities;
+using MiniERP.Domain.Enums;
 using MiniERP.Application.Interfaces.Services;
 
 namespace MiniERP.Infrastructure.Data
@@ -206,6 +207,14 @@ namespace MiniERP.Infrastructure.Data
                     .WithMany(p => p.StockTransactions)
                     .HasForeignKey(st => st.ProductId)
                     .OnDelete(DeleteBehavior.Restrict); // FIXED: Protect transaction log
+
+                entity.Property(st => st.TransactionType)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
+
+                entity.Property(st => st.ReferenceType)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
             });
 
             modelBuilder.Entity<PurchaseOrder>(entity =>

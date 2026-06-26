@@ -1,12 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using MiniERP.Infrastructure.Data;
-using MiniERP.Application.Interfaces.Repositories;
-using MiniERP.Infrastructure.Repositories;
-using MiniERP.Application.Interfaces.Services;
-using MiniERP.Application.Services;
 using FluentValidation;
 using MiniERP.Filters;
-using MiniERP.Infrastructure.Services;
+using MiniERP.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -19,8 +13,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<NormalizeFilter>();
+    options.Filters.Add<ValidationFilter>();
 });
 builder.Services.AddEndpointsApiExplorer();
+
+// Cấu hình Swagger với JWT Security Definition
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Mini ERP API", Version = "v1" });
@@ -47,31 +44,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Đăng ký ApplicationDbContext kết nối PostgreSQL
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Đăng ký Repositories
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IUnitRepository, UnitRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
-builder.Services.AddScoped<IStockTransactionRepository, StockTransactionRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-// Đăng ký Services
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<ISupplierService, SupplierService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IUnitService, UnitService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IInventoryService, InventoryService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+// Đăng ký CSDL, Repositories và Services qua Extension Methods
+builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddRepositories();
+builder.Services.AddApplicationServices();
 
 // Cấu hình JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -104,6 +80,9 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddValidatorsFromAssembly(typeof(MiniERP.Application.Validators.Customers.CreateCustomerRequestValidator).Assembly);
 
 var app = builder.Build();
+
+// Sử dụng exception middleware qua Extension Method
+app.UseGlobalExceptionHandling();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

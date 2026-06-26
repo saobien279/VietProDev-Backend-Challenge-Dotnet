@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using MiniERP.Application.DTOs.Inventory;
+using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
+using MiniERP.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +43,7 @@ namespace MiniERP.Application.Services
         public async Task<InventoryResponse> ImportAsync(ImportStockRequest request, CancellationToken cancellationToken = default)
         {
             var inventory = await _inventoryRepository.GetByProductIdAsync(request.ProductId, cancellationToken);
+            var stockBefore = inventory?.Quantity ?? 0;
             
             if (inventory == null)
             {
@@ -62,10 +65,13 @@ namespace MiniERP.Application.Services
             var transaction = new StockTransaction
             {
                 ProductId = request.ProductId,
-                TransactionType = "IMPORT",
+                TransactionType = TransactionType.IMPORT,
                 Quantity = request.Quantity,
                 Reason = request.Reason,
-                ReferenceId = null
+                ReferenceId = null,
+                StockBefore = stockBefore,
+                StockAfter = inventory.Quantity,
+                ReferenceType = ReferenceType.Manual
             };
 
             _stockTransactionRepository.Add(transaction);
@@ -76,7 +82,7 @@ namespace MiniERP.Application.Services
             }
             catch (DbUpdateConcurrencyException)
             {
-                throw new InvalidOperationException("Concurrent modification detected. Please retry.");
+                throw new ConcurrencyConflictException("Concurrent modification detected. Please retry.");
             }
 
             // Re-fetch to populate navigation properties
@@ -90,9 +96,10 @@ namespace MiniERP.Application.Services
 
             if (inventory == null || inventory.Quantity < request.Quantity)
             {
-                throw new InvalidOperationException("Insufficient stock for export.");
+                throw new BusinessValidationException("Insufficient stock for export.");
             }
 
+            var stockBefore = inventory.Quantity;
             inventory.Quantity -= request.Quantity;
             inventory.LastUpdated = DateTime.UtcNow;
             _inventoryRepository.Update(inventory);
@@ -100,10 +107,13 @@ namespace MiniERP.Application.Services
             var transaction = new StockTransaction
             {
                 ProductId = request.ProductId,
-                TransactionType = "EXPORT",
+                TransactionType = TransactionType.EXPORT,
                 Quantity = request.Quantity,
                 Reason = request.Reason,
-                ReferenceId = null
+                ReferenceId = null,
+                StockBefore = stockBefore,
+                StockAfter = inventory.Quantity,
+                ReferenceType = ReferenceType.Manual
             };
 
             _stockTransactionRepository.Add(transaction);
@@ -114,7 +124,7 @@ namespace MiniERP.Application.Services
             }
             catch (DbUpdateConcurrencyException)
             {
-                throw new InvalidOperationException("Concurrent modification detected. Please retry.");
+                throw new ConcurrencyConflictException("Concurrent modification detected. Please retry.");
             }
 
             // Re-fetch to populate navigation properties
@@ -142,10 +152,13 @@ namespace MiniERP.Application.Services
                 ProductId = transaction.ProductId,
                 ProductName = transaction.Product?.ProductName ?? string.Empty,
                 Sku = transaction.Product?.Sku ?? string.Empty,
-                TransactionType = transaction.TransactionType,
+                TransactionType = transaction.TransactionType.ToString(),
                 Quantity = transaction.Quantity,
                 Reason = transaction.Reason,
                 ReferenceId = transaction.ReferenceId,
+                StockBefore = transaction.StockBefore,
+                StockAfter = transaction.StockAfter,
+                ReferenceType = transaction.ReferenceType?.ToString(),
                 CreatedAt = transaction.CreatedAt
             };
         }

@@ -1,4 +1,5 @@
 using MiniERP.Application.DTOs.Products;
+using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
@@ -76,21 +77,21 @@ namespace MiniERP.Application.Services
             var hasInventory = await _productRepository.HasInventoryAsync(id, cancellationToken);
             if (hasInventory)
             {
-                throw new InvalidOperationException("Cannot delete product because it still has inventory stock (quantity > 0).");
+                throw new BusinessValidationException("Cannot delete product because it still has inventory stock (quantity > 0).");
             }
 
             // Guard: Cannot delete if product has stock transactions
             var hasTransactions = await _productRepository.HasStockTransactionsAsync(id, cancellationToken);
             if (hasTransactions)
             {
-                throw new InvalidOperationException("Cannot delete product because it has associated stock transactions.");
+                throw new BusinessValidationException("Cannot delete product because it has associated stock transactions.");
             }
 
             // Guard: Cannot delete if product appears in any order items
             var hasOrderItems = await _productRepository.HasOrderItemsAsync(id, cancellationToken);
             if (hasOrderItems)
             {
-                throw new InvalidOperationException("Cannot delete product because it is referenced in purchase or sales orders.");
+                throw new BusinessValidationException("Cannot delete product because it is referenced in purchase or sales orders.");
             }
 
             _productRepository.Delete(product);

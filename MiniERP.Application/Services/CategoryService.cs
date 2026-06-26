@@ -1,4 +1,5 @@
 using MiniERP.Application.DTOs.Categories;
+using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
@@ -70,14 +71,14 @@ namespace MiniERP.Application.Services
             var hasProducts = await _categoryRepository.HasProductsAsync(id, cancellationToken);
             if (hasProducts)
             {
-                throw new InvalidOperationException("Cannot delete category because it has associated products.");
+                throw new BusinessValidationException("Cannot delete category because it has associated products.");
             }
 
             // Guard: Cannot delete if category has sub-categories
             var hasSubCategories = await _categoryRepository.AnyAsync(c => c.ParentId == id, cancellationToken);
             if (hasSubCategories)
             {
-                throw new InvalidOperationException("Cannot delete category because it has sub-categories.");
+                throw new BusinessValidationException("Cannot delete category because it has sub-categories.");
             }
 
             _categoryRepository.Delete(category);

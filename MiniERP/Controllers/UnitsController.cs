@@ -1,7 +1,8 @@
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using MiniERP.Application.DTOs.Units;
 using MiniERP.Application.Interfaces.Services;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiniERP.Controllers
 {
@@ -10,17 +11,10 @@ namespace MiniERP.Controllers
     public class UnitsController : ControllerBase
     {
         private readonly IUnitService _unitService;
-        private readonly IValidator<CreateUnitRequest> _createValidator;
-        private readonly IValidator<UpdateUnitRequest> _updateValidator;
 
-        public UnitsController(
-            IUnitService unitService,
-            IValidator<CreateUnitRequest> createValidator,
-            IValidator<UpdateUnitRequest> updateValidator)
+        public UnitsController(IUnitService unitService)
         {
             _unitService = unitService;
-            _createValidator = createValidator;
-            _updateValidator = updateValidator;
         }
 
         [HttpGet]
@@ -39,18 +33,6 @@ namespace MiniERP.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateUnitRequest request, CancellationToken cancellationToken)
         {
-            var validationResult = await _createValidator.ValidateAsync(request, cancellationToken);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "Validation failed.",
-                    data = (object?)null,
-                    errors = validationResult.Errors.Select(e => e.ErrorMessage)
-                });
-            }
-
             var created = await _unitService.CreateAsync(request, cancellationToken);
             return StatusCode(201, new
             {
@@ -64,90 +46,49 @@ namespace MiniERP.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateUnitRequest request, CancellationToken cancellationToken)
         {
-            var validationContext = new ValidationContext<UpdateUnitRequest>(request);
-            validationContext.RootContextData["Id"] = id;
-
-            var validationResult = await _updateValidator.ValidateAsync(validationContext, cancellationToken);
-            if (!validationResult.IsValid)
+            var updated = await _unitService.UpdateAsync(id, request, cancellationToken);
+            if (!updated)
             {
-                return BadRequest(new
+                return NotFound(new
                 {
                     success = false,
-                    message = "Validation failed.",
+                    message = $"Unit with ID {id} not found.",
                     data = (object?)null,
-                    errors = validationResult.Errors.Select(e => e.ErrorMessage)
+                    errors = new[] { $"Unit with ID {id} does not exist or has been deleted." }
                 });
             }
 
-            try
+            return Ok(new
             {
-                var updated = await _unitService.UpdateAsync(id, request, cancellationToken);
-                if (!updated)
-                {
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = $"Unit with ID {id} not found.",
-                        data = (object?)null,
-                        errors = new[] { $"Unit with ID {id} does not exist or has been deleted." }
-                    });
-                }
-
-                return Ok(new
-                {
-                    success = true,
-                    message = "Unit updated successfully.",
-                    data = (object?)null,
-                    errors = (object?)null
-                });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "Business validation failed.",
-                    data = (object?)null,
-                    errors = new[] { ex.Message }
-                });
-            }
+                success = true,
+                message = "Unit updated successfully.",
+                data = (object?)null,
+                errors = (object?)null
+            });
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
-            try
+            var deleted = await _unitService.DeleteAsync(id, cancellationToken);
+            if (!deleted)
             {
-                var deleted = await _unitService.DeleteAsync(id, cancellationToken);
-                if (!deleted)
-                {
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = $"Unit with ID {id} not found.",
-                        data = (object?)null,
-                        errors = new[] { $"Unit with ID {id} does not exist or has been deleted." }
-                    });
-                }
-
-                return Ok(new
-                {
-                    success = true,
-                    message = "Unit deleted successfully (soft delete).",
-                    data = (object?)null,
-                    errors = (object?)null
-                });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new
+                return NotFound(new
                 {
                     success = false,
-                    message = "Business validation failed.",
+                    message = $"Unit with ID {id} not found.",
                     data = (object?)null,
-                    errors = new[] { ex.Message }
+                    errors = new[] { $"Unit with ID {id} does not exist or has been deleted." }
                 });
             }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Unit deleted successfully (soft delete).",
+                data = (object?)null,
+                errors = (object?)null
+            });
         }
     }
 }
