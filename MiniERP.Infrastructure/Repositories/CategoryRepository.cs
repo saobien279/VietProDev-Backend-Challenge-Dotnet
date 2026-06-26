@@ -24,7 +24,9 @@ namespace MiniERP.Infrastructure.Repositories
 
         public async Task<Category?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            return await _context.Categories.FindAsync(new object[] { id }, cancellationToken);
+            return await _context.Categories
+                .Include(c => c.ParentCategory)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
         }
 
         public async Task<bool> AnyAsync(Expression<Func<Category, bool>> predicate, CancellationToken cancellationToken = default)

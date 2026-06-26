@@ -27,6 +27,21 @@ namespace MiniERP.Application.Services
             });
         }
 
+        public async Task<CategoryResponse?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id, cancellationToken);
+            if (category == null) return null;
+
+            return new CategoryResponse
+            {
+                Id = category.Id,
+                CategoryName = category.CategoryName,
+                ParentId = category.ParentId,
+                ParentCategoryName = category.ParentCategory?.CategoryName,
+                CreatedAt = category.CreatedAt
+            };
+        }
+
         public async Task<CategoryResponse> CreateAsync(CreateCategoryRequest request, CancellationToken cancellationToken = default)
         {
             var category = new Category

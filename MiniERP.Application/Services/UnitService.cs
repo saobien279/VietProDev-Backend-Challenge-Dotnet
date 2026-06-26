@@ -25,6 +25,19 @@ namespace MiniERP.Application.Services
             });
         }
 
+        public async Task<UnitResponse?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var unit = await _unitRepository.GetByIdAsync(id, cancellationToken);
+            if (unit == null) return null;
+
+            return new UnitResponse
+            {
+                Id = unit.Id,
+                UnitName = unit.UnitName,
+                CreatedAt = unit.CreatedAt
+            };
+        }
+
         public async Task<UnitResponse> CreateAsync(CreateUnitRequest request, CancellationToken cancellationToken = default)
         {
             var unit = new Unit
