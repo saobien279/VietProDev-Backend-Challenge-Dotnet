@@ -36,6 +36,30 @@ namespace MiniERP.Controllers
             });
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+        {
+            var category = await _categoryService.GetByIdAsync(id, cancellationToken);
+            if (category == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = $"Category with ID {id} not found.",
+                    data = (object?)null,
+                    errors = new[] { $"Category with ID {id} does not exist or has been deleted." }
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Retrieved category successfully.",
+                data = category,
+                errors = (object?)null
+            });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken cancellationToken)
         {
