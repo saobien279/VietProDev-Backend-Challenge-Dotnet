@@ -58,6 +58,18 @@ namespace MiniERP.Middleware
                     errors = new[] { cce.Message };
                     break;
 
+                case DuplicateResourceException dre:
+                    statusCode = HttpStatusCode.Conflict;
+                    message = "Duplicate resource conflict.";
+                    errors = new[] { dre.Message };
+                    break;
+
+                case AccountDeactivatedException ade:
+                    statusCode = HttpStatusCode.Forbidden;
+                    message = ade.Message;
+                    errors = new[] { ade.Message };
+                    break;
+
                 case NotFoundException nfe:
                     statusCode = HttpStatusCode.NotFound;
                     message = "Resource not found.";

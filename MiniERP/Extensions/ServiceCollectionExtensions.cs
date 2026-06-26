@@ -29,12 +29,14 @@ namespace MiniERP.Extensions
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IInventoryRepository, InventoryRepository>();
             services.AddScoped<IStockTransactionRepository, StockTransactionRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
 
             return services;
         }
 
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
+            services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<ISupplierService, SupplierService>();
@@ -42,6 +44,8 @@ namespace MiniERP.Extensions
             services.AddScoped<IUnitService, UnitService>();
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IInventoryService, InventoryService>();
+            services.AddScoped<IJwtService, JwtService>();
+            services.AddScoped<IAuthService, AuthService>();
 
             return services;
         }
