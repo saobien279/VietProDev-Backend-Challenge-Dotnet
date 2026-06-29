@@ -221,6 +221,10 @@ namespace MiniERP.Infrastructure.Data
             {
                 entity.HasOne(po => po.Creator).WithMany(u => u.CreatedPurchaseOrders).HasForeignKey(po => po.CreatedBy).OnDelete(DeleteBehavior.Restrict); // FIXED
                 entity.HasOne(po => po.Supplier).WithMany(s => s.PurchaseOrders).HasForeignKey(po => po.SupplierId).OnDelete(DeleteBehavior.Restrict); // FIXED
+
+                entity.Property(po => po.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
             });
 
             modelBuilder.Entity<PurchaseOrderItem>(entity =>
