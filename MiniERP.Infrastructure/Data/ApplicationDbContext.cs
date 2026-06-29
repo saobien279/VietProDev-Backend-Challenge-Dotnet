@@ -240,6 +240,14 @@ namespace MiniERP.Infrastructure.Data
             {
                 entity.HasOne(so => so.Creator).WithMany(u => u.CreatedSalesOrders).HasForeignKey(so => so.CreatedBy).OnDelete(DeleteBehavior.Restrict); // FIXED
                 entity.HasOne(so => so.Customer).WithMany(c => c.SalesOrders).HasForeignKey(so => so.CustomerId).OnDelete(DeleteBehavior.Restrict); // FIXED
+
+                entity.Property(so => so.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
+
+                entity.Property(so => so.PaymentStatus)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
             });
 
             modelBuilder.Entity<SalesOrderItem>(entity =>

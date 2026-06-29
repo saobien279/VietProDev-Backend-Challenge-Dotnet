@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MiniERP.Domain.Enums;
 
 namespace MiniERP.Domain.Entities
 {
@@ -8,8 +9,8 @@ namespace MiniERP.Domain.Entities
         public Guid CustomerId { get; set; }
         public virtual Customer Customer { get; set; } = null!;
         public decimal TotalAmount { get; set; }
-        public string Status { get; set; } = "DRAFT"; // DRAFT, CONFIRMED, CANCELLED
-        public string PaymentStatus { get; set; } = "UNPAID"; // UNPAID, PARTIAL, PAID
+        public SalesOrderStatus Status { get; set; } = SalesOrderStatus.DRAFT;
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.UNPAID;
         public virtual User Creator { get; set; } = null!;
 
         public virtual ICollection<SalesOrderItem> Items { get; set; } = new List<SalesOrderItem>();
