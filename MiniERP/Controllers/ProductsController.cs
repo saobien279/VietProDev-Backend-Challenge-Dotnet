@@ -18,7 +18,7 @@ namespace MiniERP.Controllers
             _productService = productService;
         }
 
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
             var products = await _productService.GetAllAsync(cancellationToken);
@@ -27,6 +27,19 @@ namespace MiniERP.Controllers
                 success = true,
                 message = "Retrieved all products successfully.",
                 data = products,
+                errors = (object?)null
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPaged([FromQuery] ProductQueryDto query, CancellationToken cancellationToken)
+        {
+            var pagedResult = await _productService.GetPagedAsync(query, cancellationToken);
+            return Ok(new
+            {
+                success = true,
+                message = "Retrieved products successfully.",
+                data = pagedResult,
                 errors = (object?)null
             });
         }

@@ -136,6 +136,24 @@ CREATE TABLE products (
     deleted_by UUID
 );
 
+CREATE TABLE product_price_histories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+    price_type VARCHAR(15) NOT NULL,
+    old_price NUMERIC(18, 2) NOT NULL,
+    new_price NUMERIC(18, 2) NOT NULL,
+    note TEXT,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    
+    -- Audit & Soft Delete Fields
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    updated_by UUID,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    deleted_by UUID
+);
+
 -- ==========================================
 -- 3. INVENTORY MANAGEMENT MODULE
 -- ==========================================
@@ -274,6 +292,24 @@ CREATE TABLE payments (
 -- 5. INDEXES
 -- ==========================================
 CREATE INDEX ix_products_sku ON products(sku);
+CREATE INDEX ix_product_price_histories_product_id ON product_price_histories(product_id);
 CREATE INDEX ix_stock_transactions_product_id ON stock_transactions(product_id);
 CREATE INDEX ix_sales_orders_created_at ON sales_orders(created_at);
 CREATE INDEX ix_purchase_orders_created_at ON purchase_orders(created_at);
+
+-- Partial Indexes for Pagination & Search
+CREATE INDEX ix_products_category_id_partial ON products(category_id) WHERE deleted_at IS NULL;
+CREATE INDEX ix_products_name_partial ON products(product_name) WHERE deleted_at IS NULL;
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX ix_products_name_trgm ON products USING gin(product_name gin_trgm_ops) WHERE deleted_at IS NULL;
+CREATE INDEX ix_products_sku_trgm ON products USING gin(sku gin_trgm_ops) WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_customers_name_partial ON customers(customer_name) WHERE deleted_at IS NULL;
+CREATE INDEX ix_customers_name_trgm ON customers USING gin(customer_name gin_trgm_ops) WHERE deleted_at IS NULL;
+CREATE INDEX ix_customers_phone_prefix ON customers(phone varchar_pattern_ops) WHERE deleted_at IS NULL;
+CREATE INDEX ix_customers_email_prefix ON customers(email varchar_pattern_ops) WHERE deleted_at IS NULL AND email IS NOT NULL;
+CREATE INDEX ix_suppliers_name_trgm ON suppliers USING gin(supplier_name gin_trgm_ops) WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_sales_orders_status_date_partial ON sales_orders(status, created_at) WHERE deleted_at IS NULL;
+CREATE INDEX ix_purchase_orders_status_date_partial ON purchase_orders(status, created_at) WHERE deleted_at IS NULL;

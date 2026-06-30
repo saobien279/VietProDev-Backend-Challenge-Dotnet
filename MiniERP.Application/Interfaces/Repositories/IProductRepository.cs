@@ -1,11 +1,13 @@
 using MiniERP.Domain.Entities;
 using System.Linq.Expressions;
+using MiniERP.Application.DTOs.Products;
 
 namespace MiniERP.Application.Interfaces.Repositories
 {
     public interface IProductRepository
     {
         Task<IEnumerable<Product>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(ProductQueryDto query, CancellationToken cancellationToken = default);
         Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
         Task<bool> AnyAsync(Expression<Func<Product, bool>> predicate, CancellationToken cancellationToken = default);
         void Add(Product product);

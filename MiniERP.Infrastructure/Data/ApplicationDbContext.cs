@@ -107,6 +107,8 @@ namespace MiniERP.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
             
+            modelBuilder.HasPostgresExtension("pg_trgm");
+
             // =========================================================================
             // 1. AUTH MODULE CONFIGURATION
             // =========================================================================
@@ -143,7 +145,11 @@ namespace MiniERP.Infrastructure.Data
             // =========================================================================
             modelBuilder.Entity<Customer>(entity =>
             {
-                entity.HasIndex(c => c.Phone).IsUnique();
+                entity.HasIndex(c => c.Phone, "ix_customers_phone").IsUnique();
+                entity.HasIndex(c => c.CustomerName, "ix_customers_name_partial").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(c => c.CustomerName, "ix_customers_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(c => c.Phone, "ix_customers_phone_prefix").HasOperators("varchar_pattern_ops").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(c => c.Email, "ix_customers_email_prefix").HasOperators("varchar_pattern_ops").HasFilter("deleted_at IS NULL AND email IS NOT NULL");
                 entity.Property(c => c.CustomerName).HasMaxLength(100).IsRequired();
                 entity.Property(c => c.Phone).HasMaxLength(20).IsRequired();
             });
@@ -151,6 +157,7 @@ namespace MiniERP.Infrastructure.Data
             modelBuilder.Entity<Supplier>(entity =>
             {
                 entity.HasIndex(s => s.Phone).IsUnique();
+                entity.HasIndex(s => s.SupplierName, "ix_suppliers_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
                 entity.Property(s => s.SupplierName).HasMaxLength(100).IsRequired();
                 entity.Property(s => s.Phone).HasMaxLength(20).IsRequired();
             });
@@ -173,7 +180,11 @@ namespace MiniERP.Infrastructure.Data
 
             modelBuilder.Entity<Product>(entity =>
             {
-                entity.HasIndex(p => p.Sku).IsUnique();
+                entity.HasIndex(p => p.Sku, "ix_products_sku").IsUnique();
+                entity.HasIndex(p => p.CategoryId, "ix_products_category_id_partial").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(p => p.ProductName, "ix_products_name_partial").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(p => p.ProductName, "ix_products_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(p => p.Sku, "ix_products_sku_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
                 entity.Property(p => p.Sku).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.ProductName).HasMaxLength(150).IsRequired();
                 
@@ -220,6 +231,8 @@ namespace MiniERP.Infrastructure.Data
 
             modelBuilder.Entity<PurchaseOrder>(entity =>
             {
+                entity.HasIndex(po => new { po.Status, po.CreatedAt }).HasDatabaseName("ix_purchase_orders_status_date_partial").HasFilter("deleted_at IS NULL");
+                
                 entity.HasOne(po => po.Creator).WithMany(u => u.CreatedPurchaseOrders).HasForeignKey(po => po.CreatedBy).OnDelete(DeleteBehavior.Restrict); // FIXED
                 entity.HasOne(po => po.Supplier).WithMany(s => s.PurchaseOrders).HasForeignKey(po => po.SupplierId).OnDelete(DeleteBehavior.Restrict); // FIXED
 
@@ -239,6 +252,8 @@ namespace MiniERP.Infrastructure.Data
 
             modelBuilder.Entity<SalesOrder>(entity =>
             {
+                entity.HasIndex(so => new { so.Status, so.CreatedAt }).HasDatabaseName("ix_sales_orders_status_date_partial").HasFilter("deleted_at IS NULL");
+                
                 entity.HasOne(so => so.Creator).WithMany(u => u.CreatedSalesOrders).HasForeignKey(so => so.CreatedBy).OnDelete(DeleteBehavior.Restrict); // FIXED
                 entity.HasOne(so => so.Customer).WithMany(c => c.SalesOrders).HasForeignKey(so => so.CustomerId).OnDelete(DeleteBehavior.Restrict); // FIXED
 

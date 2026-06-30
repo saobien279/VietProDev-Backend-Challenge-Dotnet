@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniERP.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,16 +12,17 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiniERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630080459_AddSearchAndPaginationIndexes")]
+    partial class AddSearchAndPaginationIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "9.0.17")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("MiniERP.Domain.Entities.Category", b =>
@@ -138,32 +140,14 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_customers");
 
-                    b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix")
-                        .HasDatabaseName("ix_customers_email_prefix")
-                        .HasFilter("deleted_at IS NULL AND email IS NOT NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix"), new[] { "varchar_pattern_ops" });
-
-                    b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_partial")
+                    b.HasIndex("CustomerName")
                         .HasDatabaseName("ix_customers_name_partial")
                         .HasFilter("deleted_at IS NULL");
 
-                    b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_trgm")
-                        .HasDatabaseName("ix_customers_name_trgm")
-                        .HasFilter("deleted_at IS NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Phone" }, "ix_customers_phone")
+                    b.HasIndex("Phone")
                         .IsUnique()
-                        .HasDatabaseName("ix_customers_phone");
-
-                    b.HasIndex(new[] { "Phone" }, "ix_customers_phone_prefix")
-                        .HasDatabaseName("ix_customers_phone_prefix")
+                        .HasDatabaseName("ix_customers_phone_partial")
                         .HasFilter("deleted_at IS NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Phone" }, "ix_customers_phone_prefix"), new[] { "varchar_pattern_ops" });
 
                     b.ToTable("customers");
                 });
@@ -370,34 +354,20 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_products");
 
-                    b.HasIndex("UnitId")
-                        .HasDatabaseName("ix_products_unit_id");
-
-                    b.HasIndex(new[] { "CategoryId" }, "ix_products_category_id_partial")
+                    b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_products_category_id_partial")
                         .HasFilter("deleted_at IS NULL");
 
-                    b.HasIndex(new[] { "ProductName" }, "ix_products_name_partial")
+                    b.HasIndex("ProductName")
                         .HasDatabaseName("ix_products_name_partial")
                         .HasFilter("deleted_at IS NULL");
 
-                    b.HasIndex(new[] { "ProductName" }, "ix_products_name_trgm")
-                        .HasDatabaseName("ix_products_name_trgm")
-                        .HasFilter("deleted_at IS NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "ProductName" }, "ix_products_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "ProductName" }, "ix_products_name_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Sku" }, "ix_products_sku")
+                    b.HasIndex("Sku")
                         .IsUnique()
                         .HasDatabaseName("ix_products_sku");
 
-                    b.HasIndex(new[] { "Sku" }, "ix_products_sku_trgm")
-                        .HasDatabaseName("ix_products_sku_trgm")
-                        .HasFilter("deleted_at IS NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Sku" }, "ix_products_sku_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Sku" }, "ix_products_sku_trgm"), new[] { "gin_trgm_ops" });
+                    b.HasIndex("UnitId")
+                        .HasDatabaseName("ix_products_unit_id");
 
                     b.ToTable("products", t =>
                         {
@@ -936,13 +906,6 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasIndex("Phone")
                         .IsUnique()
                         .HasDatabaseName("ix_suppliers_phone");
-
-                    b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm")
-                        .HasDatabaseName("ix_suppliers_name_trgm")
-                        .HasFilter("deleted_at IS NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("suppliers");
                 });

@@ -1,4 +1,5 @@
 using MiniERP.Application.DTOs.Products;
+using MiniERP.Application.DTOs.Common;
 using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
@@ -24,6 +25,18 @@ namespace MiniERP.Application.Services
         {
             var products = await _productRepository.GetAllAsync(cancellationToken);
             return products.Select(MapToResponse);
+        }
+
+        public async Task<PagedResult<ProductResponse>> GetPagedAsync(ProductQueryDto query, CancellationToken cancellationToken = default)
+        {
+            var (items, totalCount) = await _productRepository.GetPagedAsync(query, cancellationToken);
+            return new PagedResult<ProductResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                CurrentPage = query.Page,
+                PageSize = query.Limit
+            };
         }
 
         public async Task<ProductResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

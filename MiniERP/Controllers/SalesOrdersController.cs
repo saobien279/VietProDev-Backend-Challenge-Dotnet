@@ -23,7 +23,7 @@ namespace MiniERP.Controllers
             _paymentService = paymentService;
         }
 
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
             var sos = await _salesOrderService.GetAllAsync(cancellationToken);
@@ -32,6 +32,19 @@ namespace MiniERP.Controllers
                 success = true,
                 message = "Retrieved all sales orders successfully.",
                 data = sos,
+                errors = (object?)null
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPaged([FromQuery] SalesOrderQueryDto query, CancellationToken cancellationToken)
+        {
+            var pagedResult = await _salesOrderService.GetPagedAsync(query, cancellationToken);
+            return Ok(new
+            {
+                success = true,
+                message = "Retrieved sales orders successfully.",
+                data = pagedResult,
                 errors = (object?)null
             });
         }

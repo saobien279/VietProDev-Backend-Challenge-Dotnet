@@ -65,3 +65,8 @@ VALUES ('f1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c', 'd1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4
 -- 15. Bảng stock_transactions (Lịch sử biến động kho)
 INSERT INTO stock_transactions (id, product_id, transaction_type, quantity, reason, reference_id, created_at) 
 VALUES (gen_random_uuid(), 'c9a8b7c6-d5e4-3f2a-1b0c-9a8b7c6d5e4f', 'IMPORT', 100, 'Nhập hàng từ đơn mua b5c6d7e8', 'b5c6d7e8-f9a0-1b2c-3d4e-5f6a7b8c9d0e', NOW());
+
+-- 16. Bảng product_price_histories (Lịch sử biến động giá)
+INSERT INTO product_price_histories (id, product_id, price_type, old_price, new_price, note, created_at, created_by)
+VALUES (gen_random_uuid(), 'c9a8b7c6-d5e4-3f2a-1b0c-9a8b7c6d5e4f', 'SELLING', 9000.00, 10000.00, 'Tăng giá bán do lạm phát', NOW(), '7f9b8c2d-3a5e-4a6f-bd1a-9c7e8f5b4a3a');
+

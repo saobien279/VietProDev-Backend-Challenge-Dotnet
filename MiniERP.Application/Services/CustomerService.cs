@@ -1,4 +1,5 @@
 using MiniERP.Application.DTOs.Customers;
+using MiniERP.Application.DTOs.Common;
 using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
@@ -23,15 +24,19 @@ namespace MiniERP.Application.Services
         public async Task<IEnumerable<CustomerResponse>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             var customers = await _customerRepository.GetAllAsync(cancellationToken);
-            return customers.Select(c => new CustomerResponse
+            return customers.Select(MapToResponse);
+        }
+
+        public async Task<PagedResult<CustomerResponse>> GetPagedAsync(CustomerQueryDto query, CancellationToken cancellationToken = default)
+        {
+            var (items, totalCount) = await _customerRepository.GetPagedAsync(query, cancellationToken);
+            return new PagedResult<CustomerResponse>
             {
-                Id = c.Id,
-                CustomerName = c.CustomerName,
-                Email = c.Email,
-                Phone = c.Phone,
-                Address = c.Address,
-                CreatedAt = c.CreatedAt
-            });
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                CurrentPage = query.Page,
+                PageSize = query.Limit
+            };
         }
 
         public async Task<CustomerResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -39,15 +44,7 @@ namespace MiniERP.Application.Services
             var customer = await _customerRepository.GetByIdAsync(id, cancellationToken);
             if (customer == null) return null;
 
-            return new CustomerResponse
-            {
-                Id = customer.Id,
-                CustomerName = customer.CustomerName,
-                Email = customer.Email,
-                Phone = customer.Phone,
-                Address = customer.Address,
-                CreatedAt = customer.CreatedAt
-            };
+            return MapToResponse(customer);
         }
 
         public async Task<CustomerResponse> CreateAsync(CreateCustomerRequest request, CancellationToken cancellationToken = default)
@@ -63,15 +60,7 @@ namespace MiniERP.Application.Services
             _customerRepository.Add(customer);
             await _customerRepository.SaveChangesAsync(cancellationToken);
 
-            return new CustomerResponse
-            {
-                Id = customer.Id,
-                CustomerName = customer.CustomerName,
-                Email = customer.Email,
-                Phone = customer.Phone,
-                Address = customer.Address,
-                CreatedAt = customer.CreatedAt
-            };
+            return MapToResponse(customer);
         }
 
         public async Task<bool> UpdateAsync(Guid id, UpdateCustomerRequest request, CancellationToken cancellationToken = default)
@@ -109,6 +98,19 @@ namespace MiniERP.Application.Services
             _customerRepository.Delete(customer);
             await _customerRepository.SaveChangesAsync(cancellationToken);
             return true;
+        }
+
+        private static CustomerResponse MapToResponse(Customer customer)
+        {
+            return new CustomerResponse
+            {
+                Id = customer.Id,
+                CustomerName = customer.CustomerName,
+                Email = customer.Email,
+                Phone = customer.Phone,
+                Address = customer.Address,
+                CreatedAt = customer.CreatedAt
+            };
         }
     }
 }

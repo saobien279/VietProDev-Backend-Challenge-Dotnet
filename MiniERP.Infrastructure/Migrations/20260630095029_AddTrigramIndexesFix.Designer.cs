@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniERP.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiniERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630095029_AddTrigramIndexesFix")]
+    partial class AddTrigramIndexesFix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -138,12 +141,6 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_customers");
 
-                    b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix")
-                        .HasDatabaseName("ix_customers_email_prefix")
-                        .HasFilter("deleted_at IS NULL AND email IS NOT NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix"), new[] { "varchar_pattern_ops" });
-
                     b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_partial")
                         .HasDatabaseName("ix_customers_name_partial")
                         .HasFilter("deleted_at IS NULL");
@@ -159,11 +156,12 @@ namespace MiniERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_customers_phone");
 
-                    b.HasIndex(new[] { "Phone" }, "ix_customers_phone_prefix")
-                        .HasDatabaseName("ix_customers_phone_prefix")
+                    b.HasIndex(new[] { "Phone" }, "ix_customers_phone_trgm")
+                        .HasDatabaseName("ix_customers_phone_trgm")
                         .HasFilter("deleted_at IS NULL");
 
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Phone" }, "ix_customers_phone_prefix"), new[] { "varchar_pattern_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Phone" }, "ix_customers_phone_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Phone" }, "ix_customers_phone_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("customers");
                 });
@@ -936,13 +934,6 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasIndex("Phone")
                         .IsUnique()
                         .HasDatabaseName("ix_suppliers_phone");
-
-                    b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm")
-                        .HasDatabaseName("ix_suppliers_name_trgm")
-                        .HasFilter("deleted_at IS NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("suppliers");
                 });

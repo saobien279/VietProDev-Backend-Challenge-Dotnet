@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MiniERP.Application.DTOs.SalesOrders;
+using MiniERP.Application.DTOs.Common;
 using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
@@ -42,6 +43,18 @@ namespace MiniERP.Application.Services
         {
             var sos = await _salesOrderRepository.GetAllAsync(cancellationToken);
             return sos.Select(MapToResponse);
+        }
+
+        public async Task<PagedResult<SalesOrderResponse>> GetPagedAsync(SalesOrderQueryDto query, CancellationToken cancellationToken = default)
+        {
+            var (items, totalCount) = await _salesOrderRepository.GetPagedAsync(query, cancellationToken);
+            return new PagedResult<SalesOrderResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                CurrentPage = query.Page,
+                PageSize = query.Limit
+            };
         }
 
         public async Task<SalesOrderResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

@@ -18,7 +18,7 @@ namespace MiniERP.Controllers
             _purchaseOrderService = purchaseOrderService;
         }
 
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
             var pos = await _purchaseOrderService.GetAllAsync(cancellationToken);
@@ -27,6 +27,19 @@ namespace MiniERP.Controllers
                 success = true,
                 message = "Retrieved all purchase orders successfully.",
                 data = pos,
+                errors = (object?)null
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPaged([FromQuery] PurchaseOrderQueryDto query, CancellationToken cancellationToken)
+        {
+            var pagedResult = await _purchaseOrderService.GetPagedAsync(query, cancellationToken);
+            return Ok(new
+            {
+                success = true,
+                message = "Retrieved purchase orders successfully.",
+                data = pagedResult,
                 errors = (object?)null
             });
         }

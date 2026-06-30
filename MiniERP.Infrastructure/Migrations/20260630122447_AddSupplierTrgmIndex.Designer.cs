@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniERP.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiniERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630122447_AddSupplierTrgmIndex")]
+    partial class AddSupplierTrgmIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -137,12 +140,6 @@ namespace MiniERP.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_customers");
-
-                    b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix")
-                        .HasDatabaseName("ix_customers_email_prefix")
-                        .HasFilter("deleted_at IS NULL AND email IS NOT NULL");
-
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix"), new[] { "varchar_pattern_ops" });
 
                     b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_partial")
                         .HasDatabaseName("ix_customers_name_partial")

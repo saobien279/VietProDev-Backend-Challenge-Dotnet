@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MiniERP.Application.DTOs.PurchaseOrders;
+using MiniERP.Application.DTOs.Common;
 using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
@@ -42,6 +43,18 @@ namespace MiniERP.Application.Services
         {
             var pos = await _purchaseOrderRepository.GetAllAsync(cancellationToken);
             return pos.Select(MapToResponse);
+        }
+
+        public async Task<PagedResult<PurchaseOrderResponse>> GetPagedAsync(PurchaseOrderQueryDto query, CancellationToken cancellationToken = default)
+        {
+            var (items, totalCount) = await _purchaseOrderRepository.GetPagedAsync(query, cancellationToken);
+            return new PagedResult<PurchaseOrderResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                CurrentPage = query.Page,
+                PageSize = query.Limit
+            };
         }
 
         public async Task<PurchaseOrderResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
