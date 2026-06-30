@@ -32,6 +32,9 @@ namespace MiniERP.Extensions
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
             services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
+            services.AddScoped<IPaymentRepository, PaymentRepository>();
+            services.AddScoped<IProductPriceHistoryRepository, ProductPriceHistoryRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;
         }
@@ -50,6 +53,7 @@ namespace MiniERP.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
             services.AddScoped<ISalesOrderService, SalesOrderService>();
+            services.AddScoped<IPaymentService, PaymentService>();
 
             return services;
         }

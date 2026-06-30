@@ -38,6 +38,7 @@ namespace MiniERP.Infrastructure.Data
         public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
         public DbSet<SalesOrderItem> SalesOrderItems => Set<SalesOrderItem>();
         public DbSet<Payment> Payments => Set<Payment>();
+        public DbSet<ProductPriceHistory> ProductPriceHistories => Set<ProductPriceHistory>();
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -248,6 +249,9 @@ namespace MiniERP.Infrastructure.Data
                 entity.Property(so => so.PaymentStatus)
                     .HasConversion<string>()
                     .HasMaxLength(20);
+                
+                entity.Property<uint>("xmin")
+                    .IsRowVersion();
             });
 
             modelBuilder.Entity<SalesOrderItem>(entity =>
@@ -263,7 +267,23 @@ namespace MiniERP.Infrastructure.Data
             {
                 entity.HasOne(p => p.SalesOrder).WithMany(o => o.Payments).HasForeignKey(p => p.SalesOrderId).OnDelete(DeleteBehavior.Restrict); // FIXED: Protect payment tracking
                 
+                entity.Property(p => p.PaymentMethod)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
                 entity.ToTable(t => t.HasCheckConstraint("ck_payment_amount", "payment_amount > 0"));
+            });
+
+            modelBuilder.Entity<ProductPriceHistory>(entity =>
+            {
+                entity.HasOne(pph => pph.Product)
+                      .WithMany(p => p.PriceHistories)
+                      .HasForeignKey(pph => pph.ProductId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(pph => pph.PriceType)
+                    .HasConversion<string>()
+                    .HasMaxLength(15);
             });
 
             // =========================================================================

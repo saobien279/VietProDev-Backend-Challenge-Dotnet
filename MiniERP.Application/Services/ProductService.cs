@@ -3,16 +3,21 @@ using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
+using MiniERP.Domain.Enums;
 
 namespace MiniERP.Application.Services
 {
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
+        private readonly IProductPriceHistoryRepository _priceHistoryRepository;
 
-        public ProductService(IProductRepository productRepository)
+        public ProductService(
+            IProductRepository productRepository,
+            IProductPriceHistoryRepository priceHistoryRepository)
         {
             _productRepository = productRepository;
+            _priceHistoryRepository = priceHistoryRepository;
         }
 
         public async Task<IEnumerable<ProductResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -55,10 +60,34 @@ namespace MiniERP.Application.Services
             var product = await _productRepository.GetByIdAsync(id, cancellationToken);
             if (product == null) return false;
 
+            if (product.CostPrice != request.CostPrice)
+            {
+                _priceHistoryRepository.Add(new ProductPriceHistory
+                {
+                    ProductId = product.Id,
+                    PriceType = PriceType.COST,
+                    OldPrice = product.CostPrice,
+                    NewPrice = request.CostPrice,
+                    Note = "Cập nhật qua API"
+                });
+                product.CostPrice = request.CostPrice;
+            }
+
+            if (product.SellingPrice != request.SellingPrice)
+            {
+                _priceHistoryRepository.Add(new ProductPriceHistory
+                {
+                    ProductId = product.Id,
+                    PriceType = PriceType.SELLING,
+                    OldPrice = product.SellingPrice,
+                    NewPrice = request.SellingPrice,
+                    Note = "Cập nhật qua API"
+                });
+                product.SellingPrice = request.SellingPrice;
+            }
+
             product.Sku = request.Sku;
             product.ProductName = request.ProductName;
-            product.CostPrice = request.CostPrice;
-            product.SellingPrice = request.SellingPrice;
             product.CategoryId = request.CategoryId;
             product.UnitId = request.UnitId;
             product.IsActive = request.IsActive;

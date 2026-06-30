@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MiniERP.Application.DTOs.Payments;
 using MiniERP.Application.DTOs.SalesOrders;
 using MiniERP.Application.Interfaces.Services;
 using System;
@@ -12,10 +13,14 @@ namespace MiniERP.Controllers
     public class SalesOrdersController : ControllerBase
     {
         private readonly ISalesOrderService _salesOrderService;
+        private readonly IPaymentService _paymentService;
 
-        public SalesOrdersController(ISalesOrderService salesOrderService)
+        public SalesOrdersController(
+            ISalesOrderService salesOrderService,
+            IPaymentService paymentService)
         {
             _salesOrderService = salesOrderService;
+            _paymentService = paymentService;
         }
 
         [HttpGet]
@@ -79,6 +84,32 @@ namespace MiniERP.Controllers
                 success = true,
                 message = "Sales order cancelled successfully.",
                 data = (object?)null,
+                errors = (object?)null
+            });
+        }
+
+        [HttpGet("{id}/payments")]
+        public async Task<IActionResult> GetPayments(Guid id, CancellationToken cancellationToken)
+        {
+            var payments = await _paymentService.GetPaymentsBySalesOrderIdAsync(id, cancellationToken);
+            return Ok(new
+            {
+                success = true,
+                message = "Retrieved payments successfully.",
+                data = payments,
+                errors = (object?)null
+            });
+        }
+
+        [HttpPost("{id}/payments")]
+        public async Task<IActionResult> AddPayment(Guid id, [FromBody] CreatePaymentRequest request, CancellationToken cancellationToken)
+        {
+            var payment = await _paymentService.AddPaymentAsync(id, request, cancellationToken);
+            return StatusCode(201, new
+            {
+                success = true,
+                message = "Payment added successfully.",
+                data = payment,
                 errors = (object?)null
             });
         }

@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using MiniERP.Domain.Enums;
 
 namespace MiniERP.Domain.Entities
 {
@@ -9,6 +9,6 @@ namespace MiniERP.Domain.Entities
         public virtual SalesOrder SalesOrder { get; set; } = null!;
         public decimal PaymentAmount { get; set; }
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
-        public string PaymentMethod { get; set; } = null!; // CASH, BANK_TRANSFER
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.CASH;
     }
 }

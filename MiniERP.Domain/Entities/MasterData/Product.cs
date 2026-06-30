@@ -20,5 +20,6 @@ namespace MiniERP.Domain.Entities
         // 1-1 với Inventory
         public virtual Inventory? Inventory { get; set; }
         public virtual ICollection<StockTransaction> StockTransactions { get; set; } = new List<StockTransaction>();
+        public virtual ICollection<ProductPriceHistory> PriceHistories { get; set; } = new List<ProductPriceHistory>();
     }
 }
