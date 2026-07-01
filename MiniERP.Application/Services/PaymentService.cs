@@ -38,11 +38,6 @@ namespace MiniERP.Application.Services
             }
 
             var payments = await _paymentRepository.GetBySalesOrderIdAsync(salesOrderId, cancellationToken);
-            
-            if (!payments.Any())
-            {
-                throw new NotFoundException("No payments found for this sales order.");
-            }
 
             return payments.Select(MapToResponse);
         }
