@@ -85,22 +85,31 @@ namespace MiniERP.Application.Services
                     TotalQuantity = g.Sum(x => x.Quantity)
                 }).ToList();
 
+            var productIds = groupedItems.Select(g => g.ProductId).ToList();
+            
+            // Batch load Products & Inventories để giải quyết triệt để N+1 Queries
+            var products = await _productRepository.GetByIdsAsync(productIds, cancellationToken);
+            var productMap = products.ToDictionary(p => p.Id);
+
+            var inventories = await _inventoryRepository.GetByProductIdsAsync(productIds, cancellationToken);
+            var inventoryMap = inventories.ToDictionary(i => i.ProductId);
+
             var orderItems = new List<SalesOrderItem>();
 
             foreach (var group in groupedItems)
             {
                 // Kiểm tra Product tồn tại và active
-                var product = await _productRepository.GetByIdAsync(group.ProductId, cancellationToken);
-                if (product == null || !product.IsActive)
+                if (!productMap.TryGetValue(group.ProductId, out var product) || !product.IsActive)
                 {
                     throw new BusinessValidationException($"Product with ID {group.ProductId} does not exist or is inactive.");
                 }
 
                 // Kiểm tra Tồn kho khả dụng
-                var inventory = await _inventoryRepository.GetByProductIdAsync(group.ProductId, cancellationToken);
-                if (inventory == null || inventory.Quantity < group.TotalQuantity)
+                inventoryMap.TryGetValue(group.ProductId, out var inventory);
+                var availableStock = inventory?.Quantity ?? 0;
+                if (inventory == null || availableStock < group.TotalQuantity)
                 {
-                    throw new BusinessValidationException($"Insufficient stock for product '{product.ProductName}'. Requested: {group.TotalQuantity}, Available: {inventory?.Quantity ?? 0}.");
+                    throw new BusinessValidationException($"Insufficient stock for product '{product.ProductName}'. Requested: {group.TotalQuantity}, Available: {availableStock}.");
                 }
 
                 // Đóng băng giá bán tại thời điểm tạo đơn (lấy SellingPrice từ DB)
