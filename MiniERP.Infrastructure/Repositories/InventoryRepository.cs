@@ -24,6 +24,14 @@ namespace MiniERP.Infrastructure.Repositories
                 .FirstOrDefaultAsync(i => i.ProductId == productId, cancellationToken);
         }
 
+        public async Task<IEnumerable<Inventory>> GetByProductIdsAsync(IEnumerable<Guid> productIds, CancellationToken cancellationToken = default)
+        {
+            return await _context.Inventories
+                .Include(i => i.Product)
+                .Where(i => productIds.Contains(i.ProductId))
+                .ToListAsync(cancellationToken);
+        }
+
         public void Add(Inventory inventory)
         {
             _context.Inventories.Add(inventory);

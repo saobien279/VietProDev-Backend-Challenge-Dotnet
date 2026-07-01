@@ -63,7 +63,8 @@ namespace MiniERP.Application.Services
                 throw new NotFoundException("Customer not found.");
             }
 
-            // 2. Gom nhóm Items trùng lặp ProductId và kiểm tra Product & Tồn kho (Bảo vệ sớm)
+
+            // 2. Gom nhóm Items trùng lặp ProductId và kiểm tra Product & Tồn kho (Bảo vệ sớm - Batch Load chống N+1 query)
             var groupedItems = request.Items
                 .GroupBy(i => i.ProductId)
                 .Select(g => new
@@ -72,19 +73,25 @@ namespace MiniERP.Application.Services
                     TotalQuantity = g.Sum(x => x.Quantity)
                 }).ToList();
 
+            var productIds = groupedItems.Select(x => x.ProductId).ToList();
+            var products = await _productRepository.GetByIdsAsync(productIds, cancellationToken);
+            var productMap = products.ToDictionary(p => p.Id);
+
+            var inventories = await _inventoryRepository.GetByProductIdsAsync(productIds, cancellationToken);
+            var inventoryMap = inventories.ToDictionary(i => i.ProductId);
+
             var orderItems = new List<SalesOrderItem>();
 
             foreach (var group in groupedItems)
             {
                 // Kiểm tra Product tồn tại và active
-                var product = await _productRepository.GetByIdAsync(group.ProductId, cancellationToken);
-                if (product == null || !product.IsActive)
+                if (!productMap.TryGetValue(group.ProductId, out var product) || !product.IsActive)
                 {
                     throw new BusinessValidationException($"Product with ID {group.ProductId} does not exist or is inactive.");
                 }
 
                 // Kiểm tra Tồn kho khả dụng
-                var inventory = await _inventoryRepository.GetByProductIdAsync(group.ProductId, cancellationToken);
+                inventoryMap.TryGetValue(group.ProductId, out var inventory);
                 if (inventory == null || inventory.Quantity < group.TotalQuantity)
                 {
                     throw new BusinessValidationException($"Insufficient stock for product '{product.ProductName}'. Requested: {group.TotalQuantity}, Available: {inventory?.Quantity ?? 0}.");
@@ -113,7 +120,7 @@ namespace MiniERP.Application.Services
             };
 
             _salesOrderRepository.Add(so);
-            await _salesOrderRepository.SaveChangesAsync(cancellationToken);
+            await _salesOrderRepository.SaveChangesAsync(cancellationToken); 
 
             // Fetch lại để có đầy đủ thông tin Customer và Product
             var createdSo = await _salesOrderRepository.GetByIdAsync(so.Id, cancellationToken);

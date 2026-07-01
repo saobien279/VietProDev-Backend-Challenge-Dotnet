@@ -8,6 +8,7 @@ namespace MiniERP.Application.Interfaces.Repositories
     public interface IInventoryRepository
     {
         Task<Inventory?> GetByProductIdAsync(Guid productId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Inventory>> GetByProductIdsAsync(IEnumerable<Guid> productIds, CancellationToken cancellationToken = default);
         void Add(Inventory inventory);
         void Update(Inventory inventory);
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
