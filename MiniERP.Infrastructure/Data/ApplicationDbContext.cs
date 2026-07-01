@@ -39,6 +39,7 @@ namespace MiniERP.Infrastructure.Data
         public DbSet<SalesOrderItem> SalesOrderItems => Set<SalesOrderItem>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<ProductPriceHistory> ProductPriceHistories => Set<ProductPriceHistory>();
+        public DbSet<DailySummary> DailySummaries => Set<DailySummary>();
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -297,6 +298,11 @@ namespace MiniERP.Infrastructure.Data
                 entity.Property(pph => pph.PriceType)
                     .HasConversion<string>()
                     .HasMaxLength(15);
+            });
+
+            modelBuilder.Entity<DailySummary>(entity =>
+            {
+                entity.HasIndex(ds => ds.SummaryDate, "ix_daily_summaries_summary_date").IsUnique();
             });
 
             // =========================================================================

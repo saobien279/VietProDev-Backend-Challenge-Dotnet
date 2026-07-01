@@ -4,6 +4,8 @@ using MiniERP.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Hangfire;
+using MiniERP.Application.Interfaces.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +50,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddApplicationServices();
+builder.Services.AddBackgroundJobs(builder.Configuration);
 
 // Cấu hình JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -96,6 +99,30 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseHangfireDashboard();
+
+// Đăng ký Daily Summary Job chạy hằng ngày lúc 00:05 (giờ Việt Nam)
+TimeZoneInfo vietnamTimeZone;
+try
+{
+    vietnamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+}
+catch (TimeZoneNotFoundException)
+{
+    vietnamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobManager.AddOrUpdate<IDailySummaryJob>(
+        "daily-summary-job",
+        job => job.ExecuteAsync(null),
+        "5 0 * * *", // Chạy lúc 00:05 hằng ngày theo giờ Việt Nam
+        new RecurringJobOptions { TimeZone = vietnamTimeZone }
+    );
+}
 
 app.MapControllers();
 
