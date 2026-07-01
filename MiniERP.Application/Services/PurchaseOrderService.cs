@@ -76,19 +76,42 @@ namespace MiniERP.Application.Services
                 throw new NotFoundException("Supplier not found.");
             }
 
-            // 2. Kiểm tra Products
+            // 2. Kiểm tra Duplicate Product với giá khác nhau
+            var hasDifferentPrices = request.Items
+                .GroupBy(i => i.ProductId)
+                .Any(g => g.Select(x => x.UnitPrice).Distinct().Count() > 1);
+            if (hasDifferentPrices)
+            {
+                throw new BusinessValidationException("Product cannot have different unit prices in the same purchase order.");
+            }
+
+            // 2.5 Kiểm tra Products (Load batch chống N+1 query)
             var productIds = request.Items.Select(i => i.ProductId).Distinct().ToList();
+            var products = await _productRepository.GetByIdsAsync(productIds, cancellationToken);
+            var productMap = products.ToDictionary(p => p.Id);
+
             foreach (var productId in productIds)
             {
-                var product = await _productRepository.GetByIdAsync(productId, cancellationToken);
-                if (product == null || !product.IsActive)
+                if (!productMap.TryGetValue(productId, out var product) || !product.IsActive)
                 {
                     throw new BusinessValidationException($"Product with ID {productId} does not exist or is inactive.");
                 }
             }
 
+            // 3. Gom nhóm Items trùng lặp ProductId (Đã xác định cùng giá tiền)
+            var aggregatedItems = request.Items
+                .GroupBy(i => i.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    TotalQuantity = g.Sum(x => x.Quantity),
+                    UnitPrice = g.First().UnitPrice
+                })
+                .OrderBy(x => x.ProductId)
+                .ToList();
+
             // 3. Tính toán TotalAmount
-            var totalAmount = request.Items.Sum(item => item.Quantity * item.UnitPrice);
+            var totalAmount = aggregatedItems.Sum(item => item.TotalQuantity * item.UnitPrice);
 
             // 4. Tạo PO
             var po = new PurchaseOrder
@@ -96,11 +119,11 @@ namespace MiniERP.Application.Services
                 SupplierId = request.SupplierId,
                 Status = PurchaseOrderStatus.DRAFT,
                 TotalAmount = totalAmount,
-                Items = request.Items.Select(item => new PurchaseOrderItem
+                Items = aggregatedItems.Select(group => new PurchaseOrderItem
                 {
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice
+                    ProductId = group.ProductId,
+                    Quantity = group.TotalQuantity,
+                    UnitPrice = group.UnitPrice
                 }).ToList()
             };
 
