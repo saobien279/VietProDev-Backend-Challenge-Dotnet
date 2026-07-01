@@ -1,23 +1,42 @@
 using MiniERP.Application.DTOs.Products;
+using MiniERP.Application.DTOs.Common;
+using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
+using MiniERP.Domain.Enums;
 
 namespace MiniERP.Application.Services
 {
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
+        private readonly IProductPriceHistoryRepository _priceHistoryRepository;
 
-        public ProductService(IProductRepository productRepository)
+        public ProductService(
+            IProductRepository productRepository,
+            IProductPriceHistoryRepository priceHistoryRepository)
         {
             _productRepository = productRepository;
+            _priceHistoryRepository = priceHistoryRepository;
         }
 
         public async Task<IEnumerable<ProductResponse>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             var products = await _productRepository.GetAllAsync(cancellationToken);
             return products.Select(MapToResponse);
+        }
+
+        public async Task<PagedResult<ProductResponse>> GetPagedAsync(ProductQueryDto query, CancellationToken cancellationToken = default)
+        {
+            var (items, totalCount) = await _productRepository.GetPagedAsync(query, cancellationToken);
+            return new PagedResult<ProductResponse>
+            {
+                Items = items.Select(MapToResponse).ToList(),
+                TotalCount = totalCount,
+                CurrentPage = query.Page,
+                PageSize = query.Limit
+            };
         }
 
         public async Task<ProductResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -54,10 +73,34 @@ namespace MiniERP.Application.Services
             var product = await _productRepository.GetByIdAsync(id, cancellationToken);
             if (product == null) return false;
 
+            if (product.CostPrice != request.CostPrice)
+            {
+                _priceHistoryRepository.Add(new ProductPriceHistory
+                {
+                    ProductId = product.Id,
+                    PriceType = PriceType.COST,
+                    OldPrice = product.CostPrice,
+                    NewPrice = request.CostPrice,
+                    Note = "Cập nhật qua API"
+                });
+                product.CostPrice = request.CostPrice;
+            }
+
+            if (product.SellingPrice != request.SellingPrice)
+            {
+                _priceHistoryRepository.Add(new ProductPriceHistory
+                {
+                    ProductId = product.Id,
+                    PriceType = PriceType.SELLING,
+                    OldPrice = product.SellingPrice,
+                    NewPrice = request.SellingPrice,
+                    Note = "Cập nhật qua API"
+                });
+                product.SellingPrice = request.SellingPrice;
+            }
+
             product.Sku = request.Sku;
             product.ProductName = request.ProductName;
-            product.CostPrice = request.CostPrice;
-            product.SellingPrice = request.SellingPrice;
             product.CategoryId = request.CategoryId;
             product.UnitId = request.UnitId;
             product.IsActive = request.IsActive;
@@ -76,21 +119,21 @@ namespace MiniERP.Application.Services
             var hasInventory = await _productRepository.HasInventoryAsync(id, cancellationToken);
             if (hasInventory)
             {
-                throw new InvalidOperationException("Cannot delete product because it still has inventory stock (quantity > 0).");
+                throw new BusinessValidationException("Cannot delete product because it still has inventory stock (quantity > 0).");
             }
 
             // Guard: Cannot delete if product has stock transactions
             var hasTransactions = await _productRepository.HasStockTransactionsAsync(id, cancellationToken);
             if (hasTransactions)
             {
-                throw new InvalidOperationException("Cannot delete product because it has associated stock transactions.");
+                throw new BusinessValidationException("Cannot delete product because it has associated stock transactions.");
             }
 
             // Guard: Cannot delete if product appears in any order items
             var hasOrderItems = await _productRepository.HasOrderItemsAsync(id, cancellationToken);
             if (hasOrderItems)
             {
-                throw new InvalidOperationException("Cannot delete product because it is referenced in purchase or sales orders.");
+                throw new BusinessValidationException("Cannot delete product because it is referenced in purchase or sales orders.");
             }
 
             _productRepository.Delete(product);

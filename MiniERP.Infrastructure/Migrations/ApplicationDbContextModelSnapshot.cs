@@ -20,6 +20,7 @@ namespace MiniERP.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "9.0.17")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("MiniERP.Domain.Entities.Category", b =>
@@ -137,9 +138,32 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_customers");
 
-                    b.HasIndex("Phone")
+                    b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix")
+                        .HasDatabaseName("ix_customers_email_prefix")
+                        .HasFilter("deleted_at IS NULL AND email IS NOT NULL");
+
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_customers_email_prefix"), new[] { "varchar_pattern_ops" });
+
+                    b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_partial")
+                        .HasDatabaseName("ix_customers_name_partial")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_trgm")
+                        .HasDatabaseName("ix_customers_name_trgm")
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "CustomerName" }, "ix_customers_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex(new[] { "Phone" }, "ix_customers_phone")
                         .IsUnique()
                         .HasDatabaseName("ix_customers_phone");
+
+                    b.HasIndex(new[] { "Phone" }, "ix_customers_phone_prefix")
+                        .HasDatabaseName("ix_customers_phone_prefix")
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Phone" }, "ix_customers_phone_prefix"), new[] { "varchar_pattern_ops" });
 
                     b.ToTable("customers");
                 });
@@ -192,6 +216,12 @@ namespace MiniERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_inventories");
 
@@ -243,7 +273,8 @@ namespace MiniERP.Infrastructure.Migrations
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("payment_method");
 
                     b.Property<Guid>("SalesOrderId")
@@ -339,15 +370,34 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_products");
 
-                    b.HasIndex("CategoryId")
-                        .HasDatabaseName("ix_products_category_id");
+                    b.HasIndex("UnitId")
+                        .HasDatabaseName("ix_products_unit_id");
 
-                    b.HasIndex("Sku")
+                    b.HasIndex(new[] { "CategoryId" }, "ix_products_category_id_partial")
+                        .HasDatabaseName("ix_products_category_id_partial")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex(new[] { "ProductName" }, "ix_products_name_partial")
+                        .HasDatabaseName("ix_products_name_partial")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex(new[] { "ProductName" }, "ix_products_name_trgm")
+                        .HasDatabaseName("ix_products_name_trgm")
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "ProductName" }, "ix_products_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "ProductName" }, "ix_products_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex(new[] { "Sku" }, "ix_products_sku")
                         .IsUnique()
                         .HasDatabaseName("ix_products_sku");
 
-                    b.HasIndex("UnitId")
-                        .HasDatabaseName("ix_products_unit_id");
+                    b.HasIndex(new[] { "Sku" }, "ix_products_sku_trgm")
+                        .HasDatabaseName("ix_products_sku_trgm")
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Sku" }, "ix_products_sku_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Sku" }, "ix_products_sku_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("products", t =>
                         {
@@ -355,6 +405,71 @@ namespace MiniERP.Infrastructure.Migrations
 
                             t.HasCheckConstraint("ck_product_selling_price", "selling_price >= 0");
                         });
+                });
+
+            modelBuilder.Entity("MiniERP.Domain.Entities.ProductPriceHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<decimal>("NewPrice")
+                        .HasColumnType("numeric")
+                        .HasColumnName("new_price");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<decimal>("OldPrice")
+                        .HasColumnType("numeric")
+                        .HasColumnName("old_price");
+
+                    b.Property<string>("PriceType")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("price_type");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_product_price_histories");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("ix_product_price_histories_product_id");
+
+                    b.ToTable("product_price_histories");
                 });
 
             modelBuilder.Entity("MiniERP.Domain.Entities.PurchaseOrder", b =>
@@ -385,7 +500,8 @@ namespace MiniERP.Infrastructure.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
                     b.Property<Guid>("SupplierId")
@@ -412,6 +528,10 @@ namespace MiniERP.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId")
                         .HasDatabaseName("ix_purchase_orders_supplier_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_purchase_orders_status_date_partial")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("purchase_orders");
                 });
@@ -566,12 +686,14 @@ namespace MiniERP.Infrastructure.Migrations
 
                     b.Property<string>("PaymentStatus")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("payment_status");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
                     b.Property<decimal>("TotalAmount")
@@ -586,6 +708,12 @@ namespace MiniERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_sales_orders");
 
@@ -594,6 +722,10 @@ namespace MiniERP.Infrastructure.Migrations
 
                     b.HasIndex("CustomerId")
                         .HasDatabaseName("ix_sales_orders_customer_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_sales_orders_status_date_partial")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("sales_orders");
                 });
@@ -708,9 +840,23 @@ namespace MiniERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("reference_id");
 
+                    b.Property<string>("ReferenceType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("reference_type");
+
+                    b.Property<int>("StockAfter")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock_after");
+
+                    b.Property<int>("StockBefore")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock_before");
+
                     b.Property<string>("TransactionType")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("transaction_type");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -790,6 +936,13 @@ namespace MiniERP.Infrastructure.Migrations
                     b.HasIndex("Phone")
                         .IsUnique()
                         .HasDatabaseName("ix_suppliers_phone");
+
+                    b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm")
+                        .HasDatabaseName("ix_suppliers_name_trgm")
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "SupplierName" }, "ix_suppliers_name_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("suppliers");
                 });
@@ -1006,6 +1159,18 @@ namespace MiniERP.Infrastructure.Migrations
                     b.Navigation("Unit");
                 });
 
+            modelBuilder.Entity("MiniERP.Domain.Entities.ProductPriceHistory", b =>
+                {
+                    b.HasOne("MiniERP.Domain.Entities.Product", "Product")
+                        .WithMany("PriceHistories")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_product_price_histories_products_product_id");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("MiniERP.Domain.Entities.PurchaseOrder", b =>
                 {
                     b.HasOne("MiniERP.Domain.Entities.User", "Creator")
@@ -1136,6 +1301,8 @@ namespace MiniERP.Infrastructure.Migrations
             modelBuilder.Entity("MiniERP.Domain.Entities.Product", b =>
                 {
                     b.Navigation("Inventory");
+
+                    b.Navigation("PriceHistories");
 
                     b.Navigation("StockTransactions");
                 });

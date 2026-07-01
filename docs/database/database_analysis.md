@@ -17,3 +17,7 @@ Hệ thống Mini ERP tập trung vào quản lý Bán hàng, Nhập hàng, Tồ
 * **Bảng `inventory`:** Lưu trữ trạng thái số lượng tồn kho hiện tại của sản phẩm (Quan hệ 1-1 với `products`). 
   * *Quy định bắt buộc:* Số lượng không được phép âm (`quantity >= 0`).
 * **Bảng `stock_transactions`:** Lưu trữ nhật ký chi tiết (Audit Log) của mọi hành vi làm thay đổi kho (Nhập hàng, xuất hàng, bán hàng, hủy đơn). Bắt buộc ghi rõ lý do giao dịch để phục vụ đối soát.
+
+### 2.4. Lưu trữ Lịch sử Biến động Giá và Giao dịch Thanh toán
+* **Bảng `product_price_histories`:** Lưu trữ lịch sử cập nhật giá vốn (`COST`) hoặc giá bán (`SELLING`) của sản phẩm. Mỗi lần nhân sự sửa giá trong bảng `products`, hệ thống sẽ ghi log lại thông tin cũ và mới vào bảng này để truy vết kế toán.
+* **Bảng `payments`:** Quản lý các đợt thanh toán của khách hàng đối với `sales_orders`. Một đơn hàng có thể thanh toán nhiều lần (Thanh toán 1 phần). Ràng buộc ở đây là tổng tiền các đợt thanh toán không bao giờ được phép vượt quá `total_amount` của đơn hàng, ngăn chặn rủi ro "Double Spending".

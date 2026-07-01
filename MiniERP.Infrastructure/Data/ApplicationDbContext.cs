@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using MiniERP.Domain.Entities;
+using MiniERP.Domain.Enums;
 using MiniERP.Application.Interfaces.Services;
 
 namespace MiniERP.Infrastructure.Data
@@ -37,6 +38,7 @@ namespace MiniERP.Infrastructure.Data
         public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
         public DbSet<SalesOrderItem> SalesOrderItems => Set<SalesOrderItem>();
         public DbSet<Payment> Payments => Set<Payment>();
+        public DbSet<ProductPriceHistory> ProductPriceHistories => Set<ProductPriceHistory>();
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -103,6 +105,8 @@ namespace MiniERP.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
             
+            modelBuilder.HasPostgresExtension("pg_trgm");
+
             // =========================================================================
             // 1. AUTH MODULE CONFIGURATION
             // =========================================================================
@@ -139,7 +143,11 @@ namespace MiniERP.Infrastructure.Data
             // =========================================================================
             modelBuilder.Entity<Customer>(entity =>
             {
-                entity.HasIndex(c => c.Phone).IsUnique();
+                entity.HasIndex(c => c.Phone, "ix_customers_phone").IsUnique();
+                entity.HasIndex(c => c.CustomerName, "ix_customers_name_partial").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(c => c.CustomerName, "ix_customers_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(c => c.Phone, "ix_customers_phone_prefix").HasOperators("varchar_pattern_ops").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(c => c.Email, "ix_customers_email_prefix").HasOperators("varchar_pattern_ops").HasFilter("deleted_at IS NULL AND email IS NOT NULL");
                 entity.Property(c => c.CustomerName).HasMaxLength(100).IsRequired();
                 entity.Property(c => c.Phone).HasMaxLength(20).IsRequired();
             });
@@ -147,6 +155,7 @@ namespace MiniERP.Infrastructure.Data
             modelBuilder.Entity<Supplier>(entity =>
             {
                 entity.HasIndex(s => s.Phone).IsUnique();
+                entity.HasIndex(s => s.SupplierName, "ix_suppliers_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
                 entity.Property(s => s.SupplierName).HasMaxLength(100).IsRequired();
                 entity.Property(s => s.Phone).HasMaxLength(20).IsRequired();
             });
@@ -169,7 +178,11 @@ namespace MiniERP.Infrastructure.Data
 
             modelBuilder.Entity<Product>(entity =>
             {
-                entity.HasIndex(p => p.Sku).IsUnique();
+                entity.HasIndex(p => p.Sku, "ix_products_sku").IsUnique();
+                entity.HasIndex(p => p.CategoryId, "ix_products_category_id_partial").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(p => p.ProductName, "ix_products_name_partial").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(p => p.ProductName, "ix_products_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
+                entity.HasIndex(p => p.Sku, "ix_products_sku_trgm").HasMethod("gin").HasOperators("gin_trgm_ops").HasFilter("deleted_at IS NULL");
                 entity.Property(p => p.Sku).HasMaxLength(50).IsRequired();
                 entity.Property(p => p.ProductName).HasMaxLength(150).IsRequired();
                 
@@ -186,6 +199,10 @@ namespace MiniERP.Infrastructure.Data
             // =========================================================================
             modelBuilder.Entity<Inventory>(entity =>
             {
+                entity.Property<uint>("xmin")
+                    .HasColumnName("xmin")
+                    .IsRowVersion();
+
                 entity.HasOne(i => i.Product)
                     .WithOne(p => p.Inventory)
                     .HasForeignKey<Inventory>(i => i.ProductId)
@@ -200,12 +217,26 @@ namespace MiniERP.Infrastructure.Data
                     .WithMany(p => p.StockTransactions)
                     .HasForeignKey(st => st.ProductId)
                     .OnDelete(DeleteBehavior.Restrict); // FIXED: Protect transaction log
+
+                entity.Property(st => st.TransactionType)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
+
+                entity.Property(st => st.ReferenceType)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
             });
 
             modelBuilder.Entity<PurchaseOrder>(entity =>
             {
+                entity.HasIndex(po => new { po.Status, po.CreatedAt }).HasDatabaseName("ix_purchase_orders_status_date_partial").HasFilter("deleted_at IS NULL");
+                
                 entity.HasOne(po => po.Creator).WithMany(u => u.CreatedPurchaseOrders).HasForeignKey(po => po.CreatedBy).OnDelete(DeleteBehavior.Restrict); // FIXED
                 entity.HasOne(po => po.Supplier).WithMany(s => s.PurchaseOrders).HasForeignKey(po => po.SupplierId).OnDelete(DeleteBehavior.Restrict); // FIXED
+
+                entity.Property(po => po.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
             });
 
             modelBuilder.Entity<PurchaseOrderItem>(entity =>
@@ -219,8 +250,21 @@ namespace MiniERP.Infrastructure.Data
 
             modelBuilder.Entity<SalesOrder>(entity =>
             {
+                entity.HasIndex(so => new { so.Status, so.CreatedAt }).HasDatabaseName("ix_sales_orders_status_date_partial").HasFilter("deleted_at IS NULL");
+                
                 entity.HasOne(so => so.Creator).WithMany(u => u.CreatedSalesOrders).HasForeignKey(so => so.CreatedBy).OnDelete(DeleteBehavior.Restrict); // FIXED
                 entity.HasOne(so => so.Customer).WithMany(c => c.SalesOrders).HasForeignKey(so => so.CustomerId).OnDelete(DeleteBehavior.Restrict); // FIXED
+
+                entity.Property(so => so.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
+
+                entity.Property(so => so.PaymentStatus)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
+                
+                entity.Property<uint>("xmin")
+                    .IsRowVersion();
             });
 
             modelBuilder.Entity<SalesOrderItem>(entity =>
@@ -236,7 +280,23 @@ namespace MiniERP.Infrastructure.Data
             {
                 entity.HasOne(p => p.SalesOrder).WithMany(o => o.Payments).HasForeignKey(p => p.SalesOrderId).OnDelete(DeleteBehavior.Restrict); // FIXED: Protect payment tracking
                 
+                entity.Property(p => p.PaymentMethod)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
                 entity.ToTable(t => t.HasCheckConstraint("ck_payment_amount", "payment_amount > 0"));
+            });
+
+            modelBuilder.Entity<ProductPriceHistory>(entity =>
+            {
+                entity.HasOne(pph => pph.Product)
+                      .WithMany(p => p.PriceHistories)
+                      .HasForeignKey(pph => pph.ProductId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(pph => pph.PriceType)
+                    .HasConversion<string>()
+                    .HasMaxLength(15);
             });
 
             // =========================================================================

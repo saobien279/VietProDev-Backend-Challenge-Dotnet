@@ -1,4 +1,5 @@
 using MiniERP.Application.DTOs.Units;
+using MiniERP.Application.Exceptions;
 using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
@@ -77,7 +78,7 @@ namespace MiniERP.Application.Services
             var hasProducts = await _unitRepository.HasProductsAsync(id, cancellationToken);
             if (hasProducts)
             {
-                throw new InvalidOperationException("Cannot delete unit because it has associated products.");
+                throw new BusinessValidationException("Cannot delete unit because it has associated products.");
             }
 
             _unitRepository.Delete(unit);
