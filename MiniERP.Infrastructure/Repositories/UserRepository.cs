@@ -20,12 +20,17 @@ namespace MiniERP.Infrastructure.Repositories
 
         public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            return await _context.Users.FindAsync(new object[] { id }, cancellationToken);
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
         }
 
         public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
             return await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
         }
 
@@ -37,6 +42,20 @@ namespace MiniERP.Infrastructure.Repositories
         public void Add(User user)
         {
             _context.Users.Add(user);
+        }
+
+        public async Task<System.Collections.Generic.List<string>> GetRolesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.Roles
+                .Select(r => r.RoleName)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<System.Collections.Generic.List<Role>> GetRolesByNamesAsync(System.Collections.Generic.List<string> roleNames, CancellationToken cancellationToken = default)
+        {
+            return await _context.Roles
+                .Where(r => roleNames.Contains(r.RoleName))
+                .ToListAsync(cancellationToken);
         }
 
         public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

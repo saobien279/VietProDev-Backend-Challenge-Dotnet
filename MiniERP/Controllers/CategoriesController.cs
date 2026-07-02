@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniERP.Application.DTOs.Categories;
 using MiniERP.Application.Interfaces.Services;
@@ -6,6 +7,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN,MANAGER,STAFF,ACCOUNTANT")]
     public class CategoriesController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
@@ -53,6 +55,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken cancellationToken)
         {
             var created = await _categoryService.CreateAsync(request, cancellationToken);
@@ -66,6 +69,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest request, CancellationToken cancellationToken)
         {
             var updated = await _categoryService.UpdateAsync(id, request, cancellationToken);
@@ -90,6 +94,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
             var deleted = await _categoryService.DeleteAsync(id, cancellationToken);

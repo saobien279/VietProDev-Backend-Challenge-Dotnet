@@ -1,4 +1,4 @@
-using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Hangfire;
 using MiniERP.Application.Interfaces.Services;
@@ -7,6 +7,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN,MANAGER,ACCOUNTANT")]
     public class JobsController : ControllerBase
     {
         [HttpPost("daily-summary/run")]

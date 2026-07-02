@@ -12,6 +12,8 @@ namespace MiniERP.Application.Interfaces.Repositories
         Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
         Task<bool> AnyAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken = default);
         void Add(User user);
+        Task<System.Collections.Generic.List<string>> GetRolesAsync(CancellationToken cancellationToken = default);
+        Task<System.Collections.Generic.List<Role>> GetRolesByNamesAsync(System.Collections.Generic.List<string> roleNames, CancellationToken cancellationToken = default);
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

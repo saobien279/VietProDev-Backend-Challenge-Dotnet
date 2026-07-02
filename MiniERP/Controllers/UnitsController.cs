@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniERP.Application.DTOs.Units;
 using MiniERP.Application.Interfaces.Services;
@@ -8,6 +9,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN,MANAGER,STAFF,ACCOUNTANT")]
     public class UnitsController : ControllerBase
     {
         private readonly IUnitService _unitService;
@@ -55,6 +57,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Create([FromBody] CreateUnitRequest request, CancellationToken cancellationToken)
         {
             var created = await _unitService.CreateAsync(request, cancellationToken);
@@ -68,6 +71,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateUnitRequest request, CancellationToken cancellationToken)
         {
             var updated = await _unitService.UpdateAsync(id, request, cancellationToken);
@@ -92,6 +96,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
             var deleted = await _unitService.DeleteAsync(id, cancellationToken);

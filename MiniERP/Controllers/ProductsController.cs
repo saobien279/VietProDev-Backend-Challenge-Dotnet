@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniERP.Application.DTOs.Products;
 using MiniERP.Application.Interfaces.Services;
@@ -9,6 +10,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN,MANAGER,STAFF,ACCOUNTANT")]
     public class ProductsController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -69,6 +71,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Create([FromBody] CreateProductRequest request, CancellationToken cancellationToken)
         {
             var created = await _productService.CreateAsync(request, cancellationToken);
@@ -82,6 +85,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductRequest request, CancellationToken cancellationToken)
         {
             var updated = await _productService.UpdateAsync(id, request, cancellationToken);
@@ -106,6 +110,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             var deleted = await _productService.DeleteAsync(id, cancellationToken);

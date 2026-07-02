@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Hangfire;
 using MiniERP.Application.Interfaces.Services;
+using MiniERP.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add<NormalizeFilter>();
     options.Filters.Add<ValidationFilter>();
+    options.Filters.Add<CheckUserStatusFilter>();
 });
 builder.Services.AddEndpointsApiExplorer();
 
@@ -115,6 +117,9 @@ catch (TimeZoneNotFoundException)
 
 using (var scope = app.Services.CreateScope())
 {
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    DbInitializer.SeedAsync(context).GetAwaiter().GetResult();
+
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     recurringJobManager.AddOrUpdate<IDailySummaryJob>(
         "daily-summary-job",

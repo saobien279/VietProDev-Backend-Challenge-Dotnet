@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniERP.Application.DTOs.Inventory;
 using MiniERP.Application.Interfaces.Services;
@@ -9,6 +10,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN,STAFF,MANAGER,ACCOUNTANT")]
     public class InventoryController : ControllerBase
     {
         private readonly IInventoryService _inventoryService;
@@ -19,6 +21,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("import")]
+        [Authorize(Roles = "ADMIN,STAFF")]
         public async Task<IActionResult> Import([FromBody] ImportStockRequest request, CancellationToken cancellationToken)
         {
             var result = await _inventoryService.ImportAsync(request, cancellationToken);
@@ -32,6 +35,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("export")]
+        [Authorize(Roles = "ADMIN,STAFF")]
         public async Task<IActionResult> Export([FromBody] ExportStockRequest request, CancellationToken cancellationToken)
         {
             var result = await _inventoryService.ExportAsync(request, cancellationToken);

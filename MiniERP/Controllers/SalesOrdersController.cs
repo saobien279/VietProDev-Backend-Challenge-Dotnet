@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniERP.Application.DTOs.Payments;
 using MiniERP.Application.DTOs.SalesOrders;
@@ -10,6 +11,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN,MANAGER,STAFF,ACCOUNTANT")]
     public class SalesOrdersController : ControllerBase
     {
         private readonly ISalesOrderService _salesOrderService;
@@ -63,6 +65,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN,STAFF")]
         public async Task<IActionResult> Create([FromBody] CreateSalesOrderRequest request, CancellationToken cancellationToken)
         {
             var created = await _salesOrderService.CreateAsync(request, cancellationToken);
@@ -76,6 +79,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("{id}/confirm")]
+        [Authorize(Roles = "ADMIN,MANAGER")]
         public async Task<IActionResult> Confirm(Guid id, CancellationToken cancellationToken)
         {
             await _salesOrderService.ConfirmAsync(id, cancellationToken);
@@ -89,6 +93,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("{id}/cancel")]
+        [Authorize(Roles = "ADMIN,MANAGER")]
         public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
         {
             await _salesOrderService.CancelAsync(id, cancellationToken);
@@ -102,6 +107,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpGet("{id}/payments")]
+        [Authorize(Roles = "ADMIN,ACCOUNTANT,STAFF")]
         public async Task<IActionResult> GetPayments(Guid id, CancellationToken cancellationToken)
         {
             var payments = await _paymentService.GetPaymentsBySalesOrderIdAsync(id, cancellationToken);
@@ -115,6 +121,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("{id}/payments")]
+        [Authorize(Roles = "ADMIN,ACCOUNTANT")]
         public async Task<IActionResult> AddPayment(Guid id, [FromBody] CreatePaymentRequest request, CancellationToken cancellationToken)
         {
             var payment = await _paymentService.AddPaymentAsync(id, request, cancellationToken);
