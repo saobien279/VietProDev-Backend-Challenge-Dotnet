@@ -157,18 +157,11 @@ namespace MiniERP.Application.Services
                 throw new BusinessValidationException($"Invalid roles: {string.Join(", ", invalidRoles)}");
             }
 
-            // Clear old roles and map the new ones
-            user.UserRoles.Clear();
-            foreach (var role in rolesInDb)
-            {
-                user.UserRoles.Add(new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = role.Id
-                });
-            }
-
-            await _userRepository.SaveChangesAsync(cancellationToken);
+            // Replace all roles atomically via ExecuteDeleteAsync (bypasses Change Tracker)
+            await _userRepository.ReplaceUserRolesAsync(
+                userId,
+                rolesInDb.Select(r => r.Id).ToList(),
+                cancellationToken);
         }
     }
 }

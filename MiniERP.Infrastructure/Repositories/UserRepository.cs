@@ -58,6 +58,35 @@ namespace MiniERP.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task ReplaceUserRolesAsync(Guid userId, System.Collections.Generic.List<int> newRoleIds, CancellationToken cancellationToken = default)
+        {
+            // Delete all existing roles for this user using ExecuteDeleteAsync
+            // This bypasses the Change Tracker entirely, avoiding concurrency issues
+            await _context.UserRoles
+                .IgnoreQueryFilters()
+                .Where(ur => ur.UserId == userId)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            // Detach any tracked UserRole entities that were just deleted from DB
+            foreach (var entry in _context.ChangeTracker.Entries<UserRole>().ToList())
+            {
+                if (entry.Entity.UserId == userId)
+                    entry.State = EntityState.Detached;
+            }
+
+            // Add new roles
+            foreach (var roleId in newRoleIds)
+            {
+                _context.UserRoles.Add(new UserRole
+                {
+                    UserId = userId,
+                    RoleId = roleId
+                });
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
         public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             await _context.SaveChangesAsync(cancellationToken);
