@@ -10,7 +10,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "ADMIN")]
+    [Authorize(Policy = "RequireAdmin")]
     public class UsersController : ControllerBase
     {
         private readonly IAuthService _authService;

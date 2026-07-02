@@ -10,7 +10,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "ADMIN,STAFF,MANAGER,ACCOUNTANT")]
+    [Authorize(Policy = "RequireReadAccess")]
     public class InventoryController : ControllerBase
     {
         private readonly IInventoryService _inventoryService;
@@ -21,7 +21,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("import")]
-        [Authorize(Roles = "ADMIN,STAFF")]
+        [Authorize(Policy = "RequireInventoryWrite")]
         public async Task<IActionResult> Import([FromBody] ImportStockRequest request, CancellationToken cancellationToken)
         {
             var result = await _inventoryService.ImportAsync(request, cancellationToken);
@@ -35,7 +35,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("export")]
-        [Authorize(Roles = "ADMIN,STAFF")]
+        [Authorize(Policy = "RequireInventoryWrite")]
         public async Task<IActionResult> Export([FromBody] ExportStockRequest request, CancellationToken cancellationToken)
         {
             var result = await _inventoryService.ExportAsync(request, cancellationToken);

@@ -7,7 +7,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "ADMIN,MANAGER,STAFF,ACCOUNTANT")]
+    [Authorize(Policy = "RequireReadAccess")]
     public class CategoriesController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
@@ -55,7 +55,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
+        [Authorize(Policy = "RequireWriteAccess")]
         public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken cancellationToken)
         {
             var created = await _categoryService.CreateAsync(request, cancellationToken);
@@ -69,7 +69,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
+        [Authorize(Policy = "RequireWriteAccess")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest request, CancellationToken cancellationToken)
         {
             var updated = await _categoryService.UpdateAsync(id, request, cancellationToken);
@@ -94,7 +94,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
+        [Authorize(Policy = "RequireWriteAccess")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
             var deleted = await _categoryService.DeleteAsync(id, cancellationToken);

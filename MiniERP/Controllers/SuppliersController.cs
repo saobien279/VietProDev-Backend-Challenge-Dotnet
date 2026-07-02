@@ -10,7 +10,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "ADMIN,MANAGER,STAFF,ACCOUNTANT")]
+    [Authorize(Policy = "RequireReadAccess")]
     public class SuppliersController : ControllerBase
     {
         private readonly ISupplierService _supplierService;
@@ -58,7 +58,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
+        [Authorize(Policy = "RequireWriteAccess")]
         public async Task<IActionResult> Create([FromBody] CreateSupplierRequest request, CancellationToken cancellationToken)
         {
             var createdSupplier = await _supplierService.CreateAsync(request, cancellationToken);
@@ -72,7 +72,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
+        [Authorize(Policy = "RequireWriteAccess")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSupplierRequest request, CancellationToken cancellationToken)
         {
             var updated = await _supplierService.UpdateAsync(id, request, cancellationToken);
@@ -97,7 +97,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "ADMIN,MANAGER,STAFF")]
+        [Authorize(Policy = "RequireWriteAccess")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             var deleted = await _supplierService.DeleteAsync(id, cancellationToken);

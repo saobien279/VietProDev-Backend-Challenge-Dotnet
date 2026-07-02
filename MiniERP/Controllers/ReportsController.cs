@@ -11,7 +11,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "ADMIN,MANAGER,ACCOUNTANT")]
+    [Authorize(Policy = "RequireReportAccess")]
     public class ReportsController : ControllerBase
     {
         private readonly IReportService _reportService;
