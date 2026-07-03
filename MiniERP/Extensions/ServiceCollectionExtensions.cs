@@ -7,6 +7,8 @@ using MiniERP.Application.Services;
 using MiniERP.Infrastructure.Data;
 using MiniERP.Infrastructure.Repositories;
 using MiniERP.Infrastructure.Services;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 namespace MiniERP.Extensions
 {
@@ -35,6 +37,7 @@ namespace MiniERP.Extensions
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IProductPriceHistoryRepository, ProductPriceHistoryRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IReportRepository, ReportRepository>();
 
             return services;
         }
@@ -54,6 +57,23 @@ namespace MiniERP.Extensions
             services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
             services.AddScoped<ISalesOrderService, SalesOrderService>();
             services.AddScoped<IPaymentService, PaymentService>();
+            services.AddScoped<IReportService, ReportService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddBackgroundJobs(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(options => 
+                    options.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"))));
+
+            services.AddHangfireServer();
+
+            services.AddScoped<IDailySummaryJob, DailySummaryJob>();
 
             return services;
         }
