@@ -43,6 +43,17 @@ namespace MiniERP.Infrastructure.Services
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username)
             };
 
+            if (user.UserRoles != null)
+            {
+                foreach (var userRole in user.UserRoles)
+                {
+                    if (userRole.Role != null)
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, userRole.Role.RoleName));
+                    }
+                }
+            }
+
             var expires = DateTime.UtcNow.AddMinutes(expireMinutes);
 
             var token = new JwtSecurityToken(

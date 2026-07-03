@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MiniERP.Application.DTOs.Common;
 using MiniERP.Application.Interfaces.Services;
 
@@ -10,6 +11,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "RequireReportAccess")]
     public class ReportsController : ControllerBase
     {
         private readonly IReportService _reportService;

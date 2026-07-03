@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniERP.Application.DTOs.PurchaseOrders;
 using MiniERP.Application.Interfaces.Services;
@@ -9,6 +10,7 @@ namespace MiniERP.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "RequireOrderRead")]
     public class PurchaseOrdersController : ControllerBase
     {
         private readonly IPurchaseOrderService _purchaseOrderService;
@@ -58,6 +60,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "RequireOrderCreate")]
         public async Task<IActionResult> Create([FromBody] CreatePurchaseOrderRequest request, CancellationToken cancellationToken)
         {
             var created = await _purchaseOrderService.CreateAsync(request, cancellationToken);
@@ -71,6 +74,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("{id}/confirm")]
+        [Authorize(Policy = "RequireOrderApprove")]
         public async Task<IActionResult> Confirm(Guid id, CancellationToken cancellationToken)
         {
             await _purchaseOrderService.ConfirmAsync(id, cancellationToken);
@@ -84,6 +88,7 @@ namespace MiniERP.Controllers
         }
 
         [HttpPost("{id}/cancel")]
+        [Authorize(Policy = "RequireOrderApprove")]
         public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
         {
             await _purchaseOrderService.CancelAsync(id, cancellationToken);

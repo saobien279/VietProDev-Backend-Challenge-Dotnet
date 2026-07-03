@@ -9,7 +9,7 @@ namespace MiniERP.Application.Interfaces.Repositories
 {
     public interface ISalesOrderRepository
     {
-        Task<IEnumerable<SalesOrder>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<SalesOrder>> GetAllAsync(Guid? createdByFilter = null, CancellationToken cancellationToken = default);
         Task<(IEnumerable<SalesOrder> Items, int TotalCount)> GetPagedAsync(SalesOrderQueryDto query, CancellationToken cancellationToken = default);
         Task<SalesOrder?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
         void Add(SalesOrder salesOrder);

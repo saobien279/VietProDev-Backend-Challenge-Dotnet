@@ -6,6 +6,7 @@ using MiniERP.Application.Interfaces.Repositories;
 using MiniERP.Application.Interfaces.Services;
 using MiniERP.Domain.Entities;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,7 +69,8 @@ namespace MiniERP.Application.Services
                 FullName = user.FullName,
                 Email = user.Email,
                 IsActive = user.IsActive,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                Roles = new System.Collections.Generic.List<string>()
             };
         }
 
@@ -123,8 +125,43 @@ namespace MiniERP.Application.Services
                 FullName = user.FullName,
                 Email = user.Email,
                 IsActive = user.IsActive,
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                Roles = user.UserRoles?.Select(ur => ur.Role?.RoleName).Where(r => r != null).Select(r => r!).ToList() ?? new System.Collections.Generic.List<string>()
             };
+        }
+
+        public async Task<System.Collections.Generic.List<string>> GetRolesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _userRepository.GetRolesAsync(cancellationToken);
+        }
+
+        public async Task AssignRolesAsync(Guid userId, System.Collections.Generic.List<string> roles, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+            if (user == null || user.DeletedAt != null)
+            {
+                throw new NotFoundException("User not found.");
+            }
+
+            if (!user.IsActive)
+            {
+                throw new AccountDeactivatedException("Account is deactivated.");
+            }
+
+            // Verify all role names exist
+            var rolesInDb = await _userRepository.GetRolesByNamesAsync(roles, cancellationToken);
+            if (rolesInDb.Count != roles.Count)
+            {
+                var foundNames = rolesInDb.Select(r => r.RoleName).ToList();
+                var invalidRoles = roles.Except(foundNames).ToList();
+                throw new BusinessValidationException($"Invalid roles: {string.Join(", ", invalidRoles)}");
+            }
+
+            // Replace all roles atomically via ExecuteDeleteAsync (bypasses Change Tracker)
+            await _userRepository.ReplaceUserRolesAsync(
+                userId,
+                rolesInDb.Select(r => r.Id).ToList(),
+                cancellationToken);
         }
     }
 }

@@ -31,3 +31,6 @@ secrets.json
 
 ## Logs
 *.log
+
+## Executables
+*.exe
