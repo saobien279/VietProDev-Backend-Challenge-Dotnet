@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: minierp_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_DB: ${DB_NAME:-minierp}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-minierp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: minierp_api
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${DB_NAME:-minierp};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres123}
+      - JwtSettings__SecretKey=${JWT_SECRET:-SuperSecretKeyForMiniErpChallenge5AuthAndJwtTokenVerificationMustBeAtLeast32BytesLong!iguess}
+      - JwtSettings__Issuer=${JWT_ISSUER:-MiniERP_Issuer}
+      - JwtSettings__Audience=${JWT_AUDIENCE:-MiniERP_Audience}
+      - JwtSettings__ExpirationInMinutes=${JWT_EXPIRATION:-1440}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -289,7 +289,28 @@ CREATE TABLE payments (
 );
 
 -- ==========================================
--- 5. INDEXES
+-- 5. REPORTS
+-- ==========================================
+CREATE TABLE daily_summaries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    summary_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    total_sales_revenue NUMERIC(18, 2) NOT NULL,
+    total_sales_orders_count INTEGER NOT NULL,
+    total_purchase_cost NUMERIC(18, 2) NOT NULL,
+    total_purchase_orders_count INTEGER NOT NULL,
+    low_stock_products_count INTEGER NOT NULL,
+    
+    -- Audit & Soft Delete Fields
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    updated_by UUID,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    deleted_by UUID
+);
+
+-- ==========================================
+-- 6. INDEXES
 -- ==========================================
 CREATE INDEX ix_products_sku ON products(sku);
 CREATE INDEX ix_product_price_histories_product_id ON product_price_histories(product_id);
