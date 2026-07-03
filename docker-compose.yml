@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME:-minierp}
     ports:
       - "5433:5432"
@@ -27,8 +27,8 @@ services:
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${DB_NAME:-minierp};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres123}
-      - JwtSettings__SecretKey=${JWT_SECRET:-SuperSecretKeyForMiniErpChallenge5AuthAndJwtTokenVerificationMustBeAtLeast32BytesLong!iguess}
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${DB_NAME:-minierp};Username=${DB_USER:-postgres};Password=${DB_PASSWORD}
+      - JwtSettings__SecretKey=${JWT_SECRET}
       - JwtSettings__Issuer=${JWT_ISSUER:-MiniERP_Issuer}
       - JwtSettings__Audience=${JWT_AUDIENCE:-MiniERP_Audience}
       - JwtSettings__ExpirationInMinutes=${JWT_EXPIRATION:-1440}
@@ -37,6 +37,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   postgres_data:
