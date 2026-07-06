@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Hangfire;
 using MiniERP.Application.Interfaces.Services;
+using MiniERP.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add<NormalizeFilter>();
     options.Filters.Add<ValidationFilter>();
+    options.Filters.Add<CheckUserStatusFilter>();
 });
 builder.Services.AddEndpointsApiExplorer();
 
@@ -79,6 +81,19 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole("ADMIN"));
+    options.AddPolicy("RequireReadAccess", policy => policy.RequireRole("ADMIN", "MANAGER", "STAFF", "ACCOUNTANT"));
+    options.AddPolicy("RequireWriteAccess", policy => policy.RequireRole("ADMIN", "MANAGER", "STAFF"));
+    options.AddPolicy("RequireOrderRead", policy => policy.RequireRole("ADMIN", "MANAGER", "STAFF"));
+    options.AddPolicy("RequireOrderCreate", policy => policy.RequireRole("ADMIN", "STAFF"));
+    options.AddPolicy("RequireOrderApprove", policy => policy.RequireRole("ADMIN", "MANAGER"));
+    options.AddPolicy("RequireInventoryWrite", policy => policy.RequireRole("ADMIN", "STAFF"));
+    options.AddPolicy("RequirePaymentRead", policy => policy.RequireRole("ADMIN", "ACCOUNTANT", "STAFF"));
+    options.AddPolicy("RequirePaymentWrite", policy => policy.RequireRole("ADMIN", "ACCOUNTANT"));
+    options.AddPolicy("RequireReportAccess", policy => policy.RequireRole("ADMIN", "MANAGER", "ACCOUNTANT"));
+});
 // Đăng ký Validators từ Application Assembly
 builder.Services.AddValidatorsFromAssembly(typeof(MiniERP.Application.Validators.Customers.CreateCustomerRequestValidator).Assembly);
 
@@ -88,12 +103,9 @@ var app = builder.Build();
 app.UseGlobalExceptionHandling();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.MapOpenApi();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
@@ -115,6 +127,9 @@ catch (TimeZoneNotFoundException)
 
 using (var scope = app.Services.CreateScope())
 {
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    DbInitializer.SeedAsync(context).GetAwaiter().GetResult();
+
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     recurringJobManager.AddOrUpdate<IDailySummaryJob>(
         "daily-summary-job",

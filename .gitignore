@@ -6,6 +6,7 @@ gemini.md
 *.user
 *.userosscache
 *.sln.docstates
+.env
 
 ## Ignore build output (bin, obj, etc.)
 [Bb]in/
@@ -31,3 +32,6 @@ secrets.json
 
 ## Logs
 *.log
+
+## Executables
+*.exe

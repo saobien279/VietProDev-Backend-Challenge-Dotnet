@@ -10,5 +10,6 @@ namespace MiniERP.Application.DTOs.Auth
         public string Email { get; set; } = null!;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
+        public System.Collections.Generic.List<string> Roles { get; set; } = new();
     }
 }

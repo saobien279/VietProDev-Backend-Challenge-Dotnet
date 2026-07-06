@@ -28,5 +28,13 @@ namespace MiniERP.Infrastructure.Services
                 return null;
             }
         }
+
+        public bool IsInRole(string role)
+        {
+            return _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
+        }
+
+        public bool IsAdmin => IsInRole("ADMIN");
+        public bool IsManager => IsInRole("MANAGER");
     }
 }

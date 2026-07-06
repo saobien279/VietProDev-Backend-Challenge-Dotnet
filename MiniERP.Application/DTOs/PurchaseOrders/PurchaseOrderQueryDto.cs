@@ -9,5 +9,6 @@ namespace MiniERP.Application.DTOs.PurchaseOrders
         public PurchaseOrderStatus? Status { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
+        public Guid? CreatedByFilter { get; set; }
     }
 }

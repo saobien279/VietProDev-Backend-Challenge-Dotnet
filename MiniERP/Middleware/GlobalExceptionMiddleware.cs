@@ -70,6 +70,12 @@ namespace MiniERP.Middleware
                     errors = new[] { ade.Message };
                     break;
 
+                case ForbiddenException fe:
+                    statusCode = HttpStatusCode.Forbidden;
+                    message = fe.Message;
+                    errors = new[] { fe.Message };
+                    break;
+
                 case NotFoundException nfe:
                     statusCode = HttpStatusCode.NotFound;
                     message = "Resource not found.";

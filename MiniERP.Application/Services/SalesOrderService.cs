@@ -39,14 +39,39 @@ namespace MiniERP.Application.Services
             _currentUserService = currentUserService;
         }
 
+        private void ValidateOrderAccess(Guid? createdBy)
+        {
+            var userId = _currentUserService.UserId;
+            if (_currentUserService.IsAdmin || _currentUserService.IsManager)
+            {
+                return;
+            }
+
+            if (createdBy != userId)
+            {
+                throw new ForbiddenException("You do not have permission to access this order.");
+            }
+        }
+
         public async Task<IEnumerable<SalesOrderResponse>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            var sos = await _salesOrderRepository.GetAllAsync(cancellationToken);
+            Guid? createdByFilter = null;
+            if (!_currentUserService.IsAdmin && !_currentUserService.IsManager)
+            {
+                createdByFilter = _currentUserService.UserId;
+            }
+
+            var sos = await _salesOrderRepository.GetAllAsync(createdByFilter, cancellationToken);
             return sos.Select(MapToResponse);
         }
 
         public async Task<PagedResult<SalesOrderResponse>> GetPagedAsync(SalesOrderQueryDto query, CancellationToken cancellationToken = default)
         {
+            if (!_currentUserService.IsAdmin && !_currentUserService.IsManager)
+            {
+                query.CreatedByFilter = _currentUserService.UserId;
+            }
+
             var (items, totalCount) = await _salesOrderRepository.GetPagedAsync(query, cancellationToken);
             return new PagedResult<SalesOrderResponse>
             {
@@ -64,6 +89,7 @@ namespace MiniERP.Application.Services
             {
                 throw new NotFoundException("Sales order not found.");
             }
+            ValidateOrderAccess(so.CreatedBy);
             return MapToResponse(so);
         }
 

@@ -1,0 +1,13 @@
+.git
+.github
+.vscode
+.env
+.env.development
+.env.production
+bin/
+obj/
+publish/
+out/
+docs/
+*.md
+docker-compose*

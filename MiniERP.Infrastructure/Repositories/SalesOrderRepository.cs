@@ -20,9 +20,14 @@ namespace MiniERP.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<SalesOrder>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<SalesOrder>> GetAllAsync(Guid? createdByFilter = null, CancellationToken cancellationToken = default)
         {
-            return await _context.SalesOrders
+            var query = _context.SalesOrders.AsQueryable();
+            if (createdByFilter.HasValue)
+            {
+                query = query.Where(so => so.CreatedBy == createdByFilter.Value);
+            }
+            return await query
                 .Include(so => so.Customer)
                 .ToListAsync(cancellationToken);
         }
@@ -30,6 +35,11 @@ namespace MiniERP.Infrastructure.Repositories
         public async Task<(IEnumerable<SalesOrder> Items, int TotalCount)> GetPagedAsync(SalesOrderQueryDto query, CancellationToken cancellationToken = default)
         {
             var queryable = _context.SalesOrders.AsQueryable();
+
+            if (query.CreatedByFilter.HasValue)
+            {
+                queryable = queryable.Where(so => so.CreatedBy == query.CreatedByFilter.Value);
+            }
 
             if (query.Status.HasValue)
             {
